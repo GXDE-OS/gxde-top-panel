@@ -1,6 +1,6 @@
 set(_VERSION_MAJOR 0)
 set(_VERSION_MINOR 6)
-set(_VERSION_PATCH 8)
+set(_VERSION_PATCH 9)
 
 set(CPACK_GENERATOR "DEB")
 
@@ -65,6 +65,7 @@ add_custom_target(changelog ALL DEPENDS "${CMAKE_BINARY_DIR}/changelog.gz")
 install(FILES ${CMAKE_BINARY_DIR}/frame/dde-top-panel DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(FILES ${CMAKE_SOURCE_DIR}/xml/com.deepin.dde.toppanel.gschema.xml DESTINATION ${CMAKE_INSTALL_DATADIR}/glib-2.0/schemas)
 install(FILES ${CMAKE_SOURCE_DIR}/dde-top-panel.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+install(FILES ${CMAKE_SOURCE_DIR}/dde-top-panel.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/../../etc/xdg/autostart)
 install(DIRECTORY ${CMAKE_BINARY_DIR}/translations DESTINATION ${CMAKE_INSTALL_DATADIR}/dde-top-panel)
 
 

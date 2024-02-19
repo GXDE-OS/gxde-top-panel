@@ -1,8 +1,8 @@
 [Desktop Entry]
 Comment=DDE Top Panel
 Exec=/usr/bin/dde-top-panel
-Hidden=false
+Hidden=true
 Name=DDE-Top-Panel
-NoDisplay=false
+NoDisplay=true
 Type=Application
 X-GNOME-Autostart-enabled=true
