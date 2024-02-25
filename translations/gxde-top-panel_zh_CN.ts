@@ -4,15 +4,24 @@
 <context>
     <name>AbstractPluginsController</name>
     <message>
+        <location filename="../frame/util/abstractpluginscontroller.cpp" line="228"/>
         <source>The plugin %1 is not compatible with the system.</source>
-        <translation type="vanished">插件 %1 与系统不兼容</translation>
+        <translation>插件 %1 与系统不兼容</translation>
     </message>
 </context>
 <context>
     <name>ActiveWindowControlWidget</name>
     <message>
+        <location filename="../widgets/ActiveWindowControlWidget.cpp" line="57"/>
+        <source>   ▸   </source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../widgets/ActiveWindowControlWidget.cpp" line="158"/>
+        <location filename="../widgets/ActiveWindowControlWidget.cpp" line="162"/>
+        <location filename="../widgets/ActiveWindowControlWidget.cpp" line="194"/>
         <source>Desktop</source>
-        <translation type="vanished">桌面</translation>
+        <translation>桌面</translation>
     </message>
     <message>
         <source>桌面</source>
@@ -22,13 +31,9 @@
 <context>
     <name>MainSettingWidget</name>
     <message>
-        <source>DDE Top Panel Settings</source>
-        <translation type="vanished">DDE Top Panel 设置</translation>
-    </message>
-    <message>
         <location filename="../widgets/mainsettingwidget.ui" line="14"/>
-        <source>GXDE Top Panel Settings</source>
-        <translation>GXDE Top Panel 设置</translation>
+        <source>DDE Top Panel Settings</source>
+        <translation>DDE Top Panel 设置</translation>
     </message>
     <message>
         <location filename="../widgets/mainsettingwidget.ui" line="39"/>
@@ -120,21 +125,6 @@ If anything strange happens, please uncheck this, and restart the dde-dock.</sou
         <translation>三大控制按钮设置</translation>
     </message>
     <message>
-        <location filename="../widgets/mainsettingwidget.ui" line="1825"/>
-        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;a href=&quot;3025613752@qq.com&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0082fa;&quot;&gt;3025613752@qq.com&lt;/span&gt;&lt;/a&gt;, &lt;a href=&quot;september_hx@outlook.com&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0082fa;&quot;&gt;september_hx@outlook.com&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../widgets/mainsettingwidget.ui" line="1924"/>
-        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;a href=&quot;https://github.com/SeptemberHX/dde-top-panel&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0082fa;&quot;&gt;https://github.com/GXDE/gxde-top-panel&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../widgets/mainsettingwidget.ui" line="1955"/>
-        <source>gfdgd xi, SeptemberHX</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Show Buttons When Max</source>
         <translation type="vanished">仅在窗口全屏时显示</translation>
     </message>
@@ -218,8 +208,9 @@ If anything strange happens, please uncheck this, and restart the dde-dock.</sou
         <translation>版本</translation>
     </message>
     <message>
+        <location filename="../widgets/mainsettingwidget.ui" line="1825"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;a href=&quot;september_hx@outlook.com&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0082fa;&quot;&gt;september_hx@outlook.com&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-        <translation type="vanished">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;a href=&quot;september_hx@outlook.com&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0082fa;&quot;&gt;september_hx@outlook.com&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
+        <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;a href=&quot;september_hx@outlook.com&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0082fa;&quot;&gt;september_hx@outlook.com&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
         <location filename="../widgets/mainsettingwidget.ui" line="1862"/>
@@ -232,8 +223,14 @@ If anything strange happens, please uncheck this, and restart the dde-dock.</sou
         <translation>邮箱</translation>
     </message>
     <message>
+        <location filename="../widgets/mainsettingwidget.ui" line="1924"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;a href=&quot;https://github.com/SeptemberHX/dde-top-panel&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0082fa;&quot;&gt;https://github.com/SeptemberHX/dde-top-panel&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-        <translation type="vanished">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;a href=&quot;https://github.com/SeptemberHX/dde-top-panel&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0082fa;&quot;&gt;https://github.com/SeptemberHX/dde-top-panel&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
+        <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;a href=&quot;https://github.com/SeptemberHX/dde-top-panel&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0082fa;&quot;&gt;https://github.com/SeptemberHX/dde-top-panel&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
+    </message>
+    <message>
+        <location filename="../widgets/mainsettingwidget.ui" line="1955"/>
+        <source>SeptemberHX</source>
+        <translation></translation>
     </message>
     <message>
         <location filename="../widgets/mainsettingwidget.ui" line="2011"/>
@@ -268,35 +265,50 @@ p, li { white-space: pre-wrap; }
 &lt;li style=&quot; font-size:10pt;&quot; style=&quot; margin-top:6px; margin-bottom:6px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;在启动中心右键设置开机自启动&lt;/li&gt;&lt;/ol&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
+        <location filename="../widgets/mainsettingwidget.cpp" line="123"/>
         <source>Select your close button icon</source>
-        <translation type="vanished">选择你的关闭按钮图标</translation>
+        <translation>选择你的关闭按钮图标</translation>
     </message>
     <message>
+        <location filename="../widgets/mainsettingwidget.cpp" line="123"/>
+        <location filename="../widgets/mainsettingwidget.cpp" line="136"/>
+        <location filename="../widgets/mainsettingwidget.cpp" line="149"/>
+        <location filename="../widgets/mainsettingwidget.cpp" line="162"/>
+        <source>Images (*.png *.jpg *.svg)</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../widgets/mainsettingwidget.cpp" line="136"/>
         <source>Select your unmaximized button icon</source>
-        <translation type="vanished">选择你的最大化按钮图标</translation>
+        <translation>选择你的最大化按钮图标</translation>
     </message>
     <message>
+        <location filename="../widgets/mainsettingwidget.cpp" line="149"/>
         <source>Select your minimized button icon</source>
-        <translation type="vanished">选择你的最小化按钮图标</translation>
+        <translation>选择你的最小化按钮图标</translation>
     </message>
     <message>
+        <location filename="../widgets/mainsettingwidget.cpp" line="162"/>
         <source>Select your default icon</source>
-        <translation type="vanished">选择你的应用默认图标</translation>
+        <translation>选择你的应用默认图标</translation>
     </message>
 </context>
 <context>
     <name>TopPanelSettings</name>
     <message>
+        <location filename="../frame/util/TopPanelSettings.cpp" line="37"/>
         <source>Plugins</source>
-        <translation type="vanished">插件</translation>
+        <translation>插件</translation>
     </message>
     <message>
+        <location filename="../frame/util/TopPanelSettings.cpp" line="43"/>
         <source>Settings</source>
-        <translation type="vanished">设置</translation>
+        <translation>设置</translation>
     </message>
     <message>
+        <location filename="../frame/util/TopPanelSettings.cpp" line="48"/>
         <source>Restart</source>
-        <translation type="vanished">重启 Panel</translation>
+        <translation>重启 Panel</translation>
     </message>
 </context>
 </TS>
