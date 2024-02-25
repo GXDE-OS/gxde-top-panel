@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>DDE Top Panel Settings</string>
+   <string>GXDE Top Panel Settings</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
@@ -1822,7 +1822,7 @@ If anything strange happens, please uncheck this, and restart the dde-dock.</str
             </size>
            </property>
            <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;a href=&quot;september_hx@outlook.com&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0082fa;&quot;&gt;september_hx@outlook.com&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;a href=&quot;3025613752@qq.com&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0082fa;&quot;&gt;3025613752@qq.com&lt;/span&gt;&lt;/a&gt;, &lt;a href=&quot;september_hx@outlook.com&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0082fa;&quot;&gt;september_hx@outlook.com&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="textFormat">
             <enum>Qt::RichText</enum>
@@ -1921,7 +1921,7 @@ If anything strange happens, please uncheck this, and restart the dde-dock.</str
             </size>
            </property>
            <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;a href=&quot;https://github.com/SeptemberHX/dde-top-panel&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0082fa;&quot;&gt;https://github.com/SeptemberHX/dde-top-panel&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;a href=&quot;https://github.com/SeptemberHX/dde-top-panel&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0082fa;&quot;&gt;https://github.com/GXDE/gxde-top-panel&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="textFormat">
             <enum>Qt::RichText</enum>
@@ -1952,7 +1952,7 @@ If anything strange happens, please uncheck this, and restart the dde-dock.</str
             </size>
            </property>
            <property name="text">
-            <string>SeptemberHX</string>
+            <string>gfdgd xi, SeptemberHX</string>
            </property>
           </widget>
          </item>
