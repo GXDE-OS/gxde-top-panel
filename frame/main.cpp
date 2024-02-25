@@ -25,13 +25,13 @@ int main(int argc, char *argv[]) {
     QString locale = QLocale::system().name();
 
     QTranslator translator;
-    translator.load("/usr/share/dde-top-panel/translations/dde-top-panel_"+ locale +".qm");
+    translator.load("/usr/share/gxde-top-panel/translations/gxde-top-panel_"+ locale +".qm");
     app.installTranslator(&translator);
 
-    app.setOrganizationName("septemberhx");
-    app.setApplicationName("dde-top-panel");
-    app.setApplicationDisplayName("DDE Top Panel");
-    app.setApplicationVersion("0.6.8");
+    app.setOrganizationName("GXDE");
+    app.setApplicationName("gxde-top-panel");
+    app.setApplicationDisplayName("GXDE Top Panel");
+    app.setApplicationVersion("0.6.9");
     app.loadTranslator();
     app.setAttribute(Qt::AA_EnableHighDpiScaling, true);
     app.setAttribute(Qt::AA_UseHighDpiPixmaps, false);
