@@ -1,7 +1,6 @@
 [Desktop Entry]
 Comment=GXDE Top Panel
 Exec=/usr/bin/gxde-top-panel
-Hidden=true
 Name=GXDE-Top-Panel
 NoDisplay=true
 Type=Application
