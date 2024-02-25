@@ -39,6 +39,8 @@ MainWindow::MainWindow(QScreen *screen, bool enableBlacklist, QWidget *parent)
     this->m_layout->setSpacing(0);
     this->m_layout->setMargin(0);
 
+    this->m_layout->addWidget(new QLabel("114514"));
+
     m_settings = new TopPanelSettings(m_itemManager, screen, this);
     m_xcbMisc->set_window_type(winId(), XcbMisc::Dock);
     m_mainPanel->setDisplayMode(m_settings->displayMode());

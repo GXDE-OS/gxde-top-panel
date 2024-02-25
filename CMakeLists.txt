@@ -4,7 +4,7 @@ if (NOT DEFINED VERSION)
     set(VERSION 4.0)
 endif()
 
-project(dde-top-panel)
+project(gxde-top-panel)
 
 #set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_CXX_STANDARD 14)

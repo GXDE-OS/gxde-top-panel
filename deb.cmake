@@ -12,10 +12,10 @@ set(CPACK_PACKAGE_VERSION_MINOR "${_VERSION_MINOR}")
 set(CPACK_PACKAGE_VERSION_PATCH "${_VERSION_PATCH}")
 
 # 设置安装包的包名，打好的包将会是packagename-version-linux.debian，如果不设置，默认是工程名
-set(CPACK_PACKAGE_NAME "dde-top-panel")
+set(CPACK_PACKAGE_NAME "gxde-top-panel")
 
 # 设置程序名，就是程序安装后的名字
- set(CPACK_DEBIAN_PACKAGE_NAME "dde-top-panel")
+ set(CPACK_DEBIAN_PACKAGE_NAME "gxde-top-panel")
 
 # 设置架构
 set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
@@ -32,13 +32,13 @@ set(CPACK_DEBIAN_PACKAGE_SECTION "utils")
 set(CPACK_DEBIAN_PACKAGE_PRIORITY "Optional")
 
 # 设置description
-set(CPACK_PACKAGE_DESCRIPTION "DDE Top Panel is a top bar supporting the global menu for Deepin V20")
+set(CPACK_PACKAGE_DESCRIPTION "GXDE Top Panel is a top bar supporting the global menu for GXDE")
 
 # 设置联系方式
-set(CPACK_PACKAGE_CONTACT "september_hx@outlook.com")
+set(CPACK_PACKAGE_CONTACT "3025613752@qq.com")
 
 # 设置维护人
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "SeptemberHX")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "gfdgd xi")
 
 ##############debian/control设置完成了，下面设置控制脚本，动态库，changelog等
 
@@ -62,11 +62,11 @@ add_custom_command(
 
 add_custom_target(changelog ALL DEPENDS "${CMAKE_BINARY_DIR}/changelog.gz")
 
-install(FILES ${CMAKE_BINARY_DIR}/frame/dde-top-panel DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(FILES ${CMAKE_BINARY_DIR}/frame/gxde-top-panel DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(FILES ${CMAKE_SOURCE_DIR}/xml/com.deepin.dde.toppanel.gschema.xml DESTINATION ${CMAKE_INSTALL_DATADIR}/glib-2.0/schemas)
-install(FILES ${CMAKE_SOURCE_DIR}/dde-top-panel.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
-install(FILES ${CMAKE_SOURCE_DIR}/dde-top-panel.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/../../etc/xdg/autostart)
-install(DIRECTORY ${CMAKE_BINARY_DIR}/translations DESTINATION ${CMAKE_INSTALL_DATADIR}/dde-top-panel)
+install(FILES ${CMAKE_SOURCE_DIR}/gxde-top-panel.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+install(FILES ${CMAKE_SOURCE_DIR}/gxde-top-panel.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/../../etc/xdg/autostart)
+install(DIRECTORY ${CMAKE_BINARY_DIR}/translations DESTINATION ${CMAKE_INSTALL_DATADIR}/gxde-top-panel)
 
 
 # 最后把我们的changelog等东西也加进来，project是你的工程名
