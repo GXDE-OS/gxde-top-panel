@@ -1,8 +1,8 @@
 [Desktop Entry]
-Comment=DDE Top Panel
-Exec=/usr/bin/dde-top-panel
+Comment=GXDE Top Panel
+Exec=/usr/bin/gxde-top-panel
 Hidden=true
-Name=DDE-Top-Panel
+Name=GXDE-Top-Panel
 NoDisplay=true
 Type=Application
 X-GNOME-Autostart-enabled=true
