@@ -32,8 +32,8 @@
     <name>MainSettingWidget</name>
     <message>
         <location filename="../widgets/mainsettingwidget.ui" line="14"/>
-        <source>DDE Top Panel Settings</source>
-        <translation>DDE Top Panel 设置</translation>
+        <source>GXDE Top Panel Settings</source>
+        <translation>GXDE Top Panel 设置</translation>
     </message>
     <message>
         <location filename="../widgets/mainsettingwidget.ui" line="39"/>
