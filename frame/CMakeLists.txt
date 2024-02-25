@@ -25,7 +25,7 @@ pkg_check_modules(DtkGUI REQUIRED dtkgui)
 find_package(Qt5LinguistTools REQUIRED)
 
 set(TS_FILES
-        ${CMAKE_SOURCE_DIR}/translations/dde-top-panel_zh_CN.ts
+        ${CMAKE_SOURCE_DIR}/translations/gxde-top-panel_zh_CN.ts
         )
 
 set_source_files_properties(${TS_FILES} PROPERTIES OUTPUT_LOCATION ${CMAKE_BINARY_DIR}/translations)

@@ -40,6 +40,9 @@ set(CPACK_PACKAGE_CONTACT "3025613752@qq.com")
 # 设置维护人
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "gfdgd xi")
 
+# 设置冲突
+set(CPACK_DEBIAN_PACKAGE_CONFLICTS "dde-top-panel")
+
 ##############debian/control设置完成了，下面设置控制脚本，动态库，changelog等
 
 # lib目录下保存这一些动态库和安装控制脚本（postinst、postinst、preinst、prerm）  doc目录下是changelog和copyright等文件 这些东西是打包时要依赖的一些额外的东西
