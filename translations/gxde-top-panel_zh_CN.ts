@@ -125,6 +125,21 @@ If anything strange happens, please uncheck this, and restart the dde-dock.</sou
         <translation>三大控制按钮设置</translation>
     </message>
     <message>
+        <location filename="../widgets/mainsettingwidget.ui" line="1825"/>
+        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;a href=&quot;3025613752@qq.com&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0082fa;&quot;&gt;3025613752@qq.com&lt;/span&gt;&lt;/a&gt;, &lt;a href=&quot;september_hx@outlook.com&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0082fa;&quot;&gt;september_hx@outlook.com&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../widgets/mainsettingwidget.ui" line="1924"/>
+        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;a href=&quot;https://github.com/SeptemberHX/dde-top-panel&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0082fa;&quot;&gt;https://github.com/GXDE/gxde-top-panel&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../widgets/mainsettingwidget.ui" line="1955"/>
+        <source>gfdgd xi, SeptemberHX</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Show Buttons When Max</source>
         <translation type="vanished">仅在窗口全屏时显示</translation>
     </message>
@@ -208,9 +223,8 @@ If anything strange happens, please uncheck this, and restart the dde-dock.</sou
         <translation>版本</translation>
     </message>
     <message>
-        <location filename="../widgets/mainsettingwidget.ui" line="1825"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;a href=&quot;september_hx@outlook.com&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0082fa;&quot;&gt;september_hx@outlook.com&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-        <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;a href=&quot;september_hx@outlook.com&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0082fa;&quot;&gt;september_hx@outlook.com&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
+        <translation type="vanished">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;a href=&quot;september_hx@outlook.com&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0082fa;&quot;&gt;september_hx@outlook.com&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
         <location filename="../widgets/mainsettingwidget.ui" line="1862"/>
@@ -223,14 +237,8 @@ If anything strange happens, please uncheck this, and restart the dde-dock.</sou
         <translation>邮箱</translation>
     </message>
     <message>
-        <location filename="../widgets/mainsettingwidget.ui" line="1924"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;a href=&quot;https://github.com/SeptemberHX/dde-top-panel&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0082fa;&quot;&gt;https://github.com/SeptemberHX/dde-top-panel&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-        <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;a href=&quot;https://github.com/SeptemberHX/dde-top-panel&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0082fa;&quot;&gt;https://github.com/SeptemberHX/dde-top-panel&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
-    </message>
-    <message>
-        <location filename="../widgets/mainsettingwidget.ui" line="1955"/>
-        <source>SeptemberHX</source>
-        <translation></translation>
+        <translation type="vanished">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;a href=&quot;https://github.com/SeptemberHX/dde-top-panel&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0082fa;&quot;&gt;https://github.com/SeptemberHX/dde-top-panel&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
         <location filename="../widgets/mainsettingwidget.ui" line="2011"/>

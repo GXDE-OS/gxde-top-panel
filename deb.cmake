@@ -46,8 +46,8 @@ set(CPACK_DEBIAN_PACKAGE_CONFLICTS "dde-top-panel")
 ##############debian/control设置完成了，下面设置控制脚本，动态库，changelog等
 
 # lib目录下保存这一些动态库和安装控制脚本（postinst、postinst、preinst、prerm）  doc目录下是changelog和copyright等文件 这些东西是打包时要依赖的一些额外的东西
-set(LIBS_DIR ${CMAKE_SOURCE_DIR}/debian/scripts)
-set(DOCS_DIR ${CMAKE_SOURCE_DIR}/debian/doc)
+set(LIBS_DIR ${CMAKE_SOURCE_DIR}/debian-cmake/scripts)
+set(DOCS_DIR ${CMAKE_SOURCE_DIR}/debian-cmake/doc)
 
 # 设置控制脚本，这些都是打包者本人自己准备的，没有就算了
 set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${LIBS_DIR}/postinst;${LIBS_DIR}/prerm")

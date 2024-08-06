@@ -1,0 +1,27 @@
+Source: gxde-top-panel
+Section: utils
+Priority: optional
+Maintainer: gfdgd_xi <3025613752@qq.com>
+Rules-Requires-Root: no
+Build-Depends:
+ debhelper-compat (= 13),
+ cmake,
+ g++, 
+ qtbase5-dev, 
+ libqt5x11extras5-dev, 
+ libqt5svg5-dev, 
+ libdtkwidget-dev, 
+ libdframeworkdbus-dev, 
+ libgsettings-qt-dev qttools5-dev, 
+ libkf5windowsystem-dev, 
+ libxcb-ewmh-dev, 
+ libxdo-dev
+Standards-Version: 4.6.2
+Homepage: https://gitee.com/GXDE-OS/gxde-top-panel
+
+Package: gxde-top-panel
+Architecture: any
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends},
+Description: GXDE Top Panel is a top bar supporting the global menu for GXDE
