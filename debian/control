@@ -12,7 +12,8 @@ Build-Depends:
  libqt5svg5-dev, 
  libdtkwidget-dev, 
  libdframeworkdbus-dev, 
- libgsettings-qt-dev qttools5-dev, 
+ libgsettings-qt-dev,
+ qttools5-dev,
  libkf5windowsystem-dev, 
  libxcb-ewmh-dev, 
  libxdo-dev
