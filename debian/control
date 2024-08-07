@@ -26,5 +26,6 @@ Depends:
  ${shlibs:Depends},
  ${misc:Depends},
 Recommends:
- gxde-top-panel-plugins
+ gxde-top-panel-plugins,
+ gxde-globalmenu-service
 Description: GXDE Top Panel is a top bar supporting the global menu for GXDE
