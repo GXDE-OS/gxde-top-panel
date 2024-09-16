@@ -11,12 +11,15 @@ Build-Depends:
  libqt5x11extras5-dev, 
  libqt5svg5-dev, 
  libdtkwidget-dev, 
+ libdtkcore-dev, 
+ libdtkcore-bin,
  libdframeworkdbus-dev, 
  libgsettings-qt-dev,
  qttools5-dev,
  libkf5windowsystem-dev, 
  libxcb-ewmh-dev, 
- libxdo-dev
+ libxdo-dev,
+ pkg-config
 Standards-Version: 4.6.2
 Homepage: https://gitee.com/GXDE-OS/gxde-top-panel
 
