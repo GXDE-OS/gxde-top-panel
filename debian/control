@@ -12,7 +12,7 @@ Build-Depends:
  libqt5svg5-dev, 
  libdtkwidget-dev, 
  libdtkcore-dev, 
- libdtkcore-bin,
+ libdtkcore5-bin,
  libdframeworkdbus-dev, 
  libgsettings-qt-dev,
  qttools5-dev,
