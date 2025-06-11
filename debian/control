@@ -13,7 +13,7 @@ Build-Depends:
  libdtkwidget-dev, 
  libdtkcore-dev, 
  libdtkcore5-bin,
- libdframeworkdbus-dev, 
+ libgxframeworkdbus-dev, 
  libgsettings-qt-dev,
  qttools5-dev,
  libkf5windowsystem-dev, 
