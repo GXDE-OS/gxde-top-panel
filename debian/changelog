@@ -1,4 +1,4 @@
-gxde-top-panel (0.6.9gxde3) UNRELEASED; urgency=medium
+gxde-top-panel (0.6.9gxde4) UNRELEASED; urgency=medium
 
   * Initial release. (Closes: #nnnn)  <nnnn is the bug number of your ITP>
   * 依赖修改为 libgxframeworkdbus2
