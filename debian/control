@@ -19,7 +19,8 @@ Build-Depends:
  libkf5windowsystem-dev, 
  libxcb-ewmh-dev, 
  libxdo-dev,
- pkg-config
+ pkg-config,
+ golang-gir-gio-2.0-dev
 Standards-Version: 4.6.2
 Homepage: https://gitee.com/GXDE-OS/gxde-top-panel
 
