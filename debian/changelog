@@ -1,7 +1,7 @@
-gxde-top-panel (0.6.9gxde4) UNRELEASED; urgency=medium
+gxde-top-panel (0.6.10) UNRELEASED; urgency=medium
 
   * Initial release. (Closes: #nnnn)  <nnnn is the bug number of your ITP>
   * 依赖修改为 libgxframeworkdbus2
-  * 
+  * 修复使用右键菜单重启顶栏后启动双重顶栏
 
- -- gfdgd_xi <3025613752@qq.com>  Wed, 07 Aug 2024 10:13:18 +0800
+ -- gfdgd_xi <3025613752@qq.com>  Sun, 03 Aug 2025 14:45:18 +0800

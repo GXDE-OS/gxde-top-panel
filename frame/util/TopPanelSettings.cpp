@@ -52,7 +52,7 @@ TopPanelSettings::TopPanelSettings(DockItemManager *itemManager, QScreen *screen
     connect(settingAction, &QAction::triggered, this, &TopPanelSettings::settingActionClicked);
     connect(restartAction, &QAction::triggered, this, [this] {
        qApp->exit();
-       QProcess::startDetached(qApp->arguments()[0], qApp->arguments());
+       //QProcess::startDetached(qApp->arguments()[0], qApp->arguments());
     });
 
     calculateWindowConfig();
