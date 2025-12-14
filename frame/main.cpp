@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
     app.setApplicationVersion("0.6.9");
     app.loadTranslator();
     app.setAttribute(Qt::AA_EnableHighDpiScaling, true);
-    app.setAttribute(Qt::AA_UseHighDpiPixmaps, false);
+    app.setAttribute(Qt::AA_UseHighDpiPixmaps, true);
 
 //    MainWindow mw(qApp->primaryScreen());
 //    mw.loadPlugins();
