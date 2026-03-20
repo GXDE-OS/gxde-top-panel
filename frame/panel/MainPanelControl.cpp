@@ -150,7 +150,7 @@ void MainPanelControl::resizeDockIcon()
             trashPlugin = w;
         } else if (w->pluginName() == "shutdown") {
             shutdownPlugin = w;
-        } else if (w->pluginName() == "onboard") {
+        } else if (w->pluginName() == "onboard" || w->pluginName() == "keyboard") {
             keyboardPlugin = w;
         }
     }
