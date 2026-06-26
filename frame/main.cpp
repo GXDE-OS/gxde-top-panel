@@ -38,6 +38,11 @@ int main(int argc, char *argv[]) {
 
 //    MainWindow mw(qApp->primaryScreen());
 //    mw.loadPlugins();
+    if (!app.setSingleInstance(QString("gxde-top-panel_%1").arg(getuid()))) {
+        qDebug() << "set single instance failed!!!!";
+        return -1;
+    }
+
 
     TopPanelLauncher launcher;
 
