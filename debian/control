@@ -31,3 +31,11 @@ Depends:
  gxde-top-panel-plugins,
  gxde-globalmenu-service
 Description: GXDE Top Panel is a top bar supporting the global menu for GXDE
+
+Package: gxde-top-panel-dev
+Architecture: any
+Depends:
+ ${misc:Depends},
+ gxde-top-panel (= ${binary:Version})
+Description: GXDE Top Panel development files
+ GXDE Top Panel plugin interface headers for developing plugins.

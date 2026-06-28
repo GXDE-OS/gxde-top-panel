@@ -1,0 +1,5 @@
+usr/bin/gxde-top-panel
+usr/share/applications/gxde-top-panel.desktop
+usr/share/doc/gxde-top-panel/*
+usr/share/glib-2.0/schemas/com.deepin.dde.toppanel.gschema.xml
+usr/share/gxde-top-panel/translations/*

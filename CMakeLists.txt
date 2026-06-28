@@ -24,11 +24,25 @@ endif ()
 
 if (NOT (${CMAKE_BUILD_TYPE} MATCHES "Debug"))
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast")
-
-    # generate qm
-    execute_process(COMMAND bash "translate_generation.sh"
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 endif ()
+
+# Generate .qm files from .ts files
+find_program(QT_LRELEASE_EXECUTABLE lrelease)
+file(GLOB TS_FILES "${CMAKE_SOURCE_DIR}/translations/*.ts")
+set(QM_FILES)
+foreach(TS_FILE ${TS_FILES})
+    get_filename_component(QM_FILE ${TS_FILE} NAME_WE)
+    set(QM_FILE "${CMAKE_BINARY_DIR}/translations/${QM_FILE}.qm")
+    add_custom_command(
+        OUTPUT ${QM_FILE}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/translations
+        COMMAND ${QT_LRELEASE_EXECUTABLE} ${TS_FILE} -qm ${QM_FILE}
+        DEPENDS ${TS_FILE}
+        COMMENT "Generating ${QM_FILE}"
+    )
+    list(APPEND QM_FILES ${QM_FILE})
+endforeach()
+add_custom_target(translations ALL DEPENDS ${QM_FILES})
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DQT_DEBUG")
 
@@ -44,6 +58,26 @@ file(GLOB INTERFACES "interfaces/*.h")
 add_subdirectory("frame")
 #add_subdirectory("plugins")
 add_subdirectory("appmenu")
+
+# Install interface headers for development library
+install(FILES ${INTERFACES} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gxde-top-panel)
+
+# Generate and install pkgconfig file
+configure_file(
+    ${CMAKE_SOURCE_DIR}/gxde-top-panel.pc.in
+    ${CMAKE_BINARY_DIR}/gxde-top-panel.pc
+    @ONLY
+)
+install(FILES ${CMAKE_BINARY_DIR}/gxde-top-panel.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+
+# Generate and install CMake config file
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+    ${CMAKE_SOURCE_DIR}/GxdeTopPanelConfig.cmake.in
+    ${CMAKE_BINARY_DIR}/GxdeTopPanelConfig.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GxdeTopPanel
+)
+install(FILES ${CMAKE_BINARY_DIR}/GxdeTopPanelConfig.cmake DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GxdeTopPanel)
 
 if (CMAKE_BUILD_TYPE STREQUAL "RELEASE")
     add_definitions(-DQT_NO_DEBUG_OUTPUT)

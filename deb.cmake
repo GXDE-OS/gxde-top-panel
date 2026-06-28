@@ -72,5 +72,24 @@ install(FILES ${CMAKE_SOURCE_DIR}/gxde-top-panel.desktop DESTINATION ${CMAKE_INS
 install(DIRECTORY ${CMAKE_BINARY_DIR}/translations DESTINATION ${CMAKE_INSTALL_DATADIR}/gxde-top-panel)
 
 
+# 安装开发库头文件
+install(FILES ${CMAKE_SOURCE_DIR}/interfaces/constants.h
+              ${CMAKE_SOURCE_DIR}/interfaces/pluginproxyinterface.h
+              ${CMAKE_SOURCE_DIR}/interfaces/pluginsiteminterface.h
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gxde-top-panel)
+
+# 安装 pkgconfig 文件
+configure_file(${CMAKE_SOURCE_DIR}/gxde-top-panel.pc.in ${CMAKE_BINARY_DIR}/gxde-top-panel.pc @ONLY)
+install(FILES ${CMAKE_BINARY_DIR}/gxde-top-panel.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+
+# 安装 CMake 配置文件
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+    ${CMAKE_SOURCE_DIR}/GxdeTopPanelConfig.cmake.in
+    ${CMAKE_BINARY_DIR}/GxdeTopPanelConfig.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GxdeTopPanel
+)
+install(FILES ${CMAKE_BINARY_DIR}/GxdeTopPanelConfig.cmake DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/GxdeTopPanel)
+
 # 最后把我们的changelog等东西也加进来，project是你的工程名
 install(FILES ${CMAKE_BINARY_DIR}/changelog.gz ${DOCS_DIR}/copyright DESTINATION ${CMAKE_INSTALL_DOCDIR})
