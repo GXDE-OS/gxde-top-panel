@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.16)
 
 #configure_file(config-X11.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config-X11.h)
 
@@ -8,7 +8,7 @@ project(${PROJECT})
 
 remove_definitions(-DQT_NO_CAST_FROM_ASCII -DQT_STRICT_ITERATORS -DQT_NO_CAST_FROM_BYTEARRAY -DQT_NO_KEYWORDS)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 # 启用 qt moc 的支持
 set(CMAKE_AUTOMOC ON)
@@ -19,10 +19,8 @@ set(CMAKE_AUTOUIC ON)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-find_package(Qt5Widgets REQUIRED)
-find_package(Qt5DBus REQUIRED)
-find_package(Qt5X11Extras REQUIRED)
-find_package(KF5WindowSystem REQUIRED)
+find_package(Qt6 REQUIRED COMPONENTS Widgets DBus)
+find_package(KF6WindowSystem REQUIRED)
 
 
 set(SRCS
@@ -45,15 +43,13 @@ set(SRCS
 add_library(${PROJECT} ${SRCS})
 
 target_include_directories(${PROJECT} PUBLIC
-        ${Qt5Widgets_INCLUDE_DIRS}
-        ${Qt5DBus_INCLUDE_DIRS}
-        ${Qt5X11Extras_INCLUDE_DIRS}
+        ${Qt6Widgets_INCLUDE_DIRS}
+        ${Qt6DBus_INCLUDE_DIRS}
         )
 
 target_link_libraries(${PROJECT}
-        Qt5::Widgets
-        Qt5::DBus
-        Qt5::X11Extras
-        KF5::WindowSystem
+        Qt6::Widgets
+        Qt6::DBus
+        KF6::WindowSystem
         xcb
         )

@@ -8,15 +8,14 @@
 #include <QApplication>
 #include <QScreen>
 #include "XUtils.h"
-#include "xdo.h"
-#include <X11/Xlib.h>
-#include <X11/Xw32defs.h>
-#include <iostream>
-#include <X11/Xutil.h>
-#include <X11/Xatom.h>
 #include <KWindowInfo>
 #include <KWindowSystem>
+#include <KX11Extras>
+#include <QRegularExpression>
 #include "util/CustomSettings.h"
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#include <X11/Xatom.h>
 
 xdo_t *XUtils::m_xdo = nullptr;
 Display *XUtils::m_display = nullptr;
@@ -36,7 +35,7 @@ int XUtils::getFocusWindowId() {
     if (ret == XDO_SUCCESS) {
         return window;
     } else {
-        return KWindowSystem::activeWindow();
+        return KX11Extras::activeWindow();
     }
 //    context_t context;
 //    context.xdo = m_xdo;
@@ -214,7 +213,7 @@ QPixmap XUtils::getWindowIconNameX11(int winId) {
 
 // Abandoned because it always returns an icon even there is no icon for current window: it provides default icon.
 QPixmap XUtils::getWindowIconName(int winId) {
-    QPixmap iconPixmap = KWindowSystem::self()->icon(winId);
+    QPixmap iconPixmap = KX11Extras::icon(winId);
     if (iconPixmap.isNull()) {
         return QPixmap(CustomSettings::instance()->getActiveDefaultAppIconPath());
     }
@@ -223,7 +222,7 @@ QPixmap XUtils::getWindowIconName(int winId) {
 
 
 int XUtils::getWindowScreenNum(int winId) {
-    KWindowInfo info = KWindowSystem::self()->windowInfo(winId, NET::WMGeometry);
+    KWindowInfo info(winId, NET::WMGeometry);
     if (info.valid()) {
         QRect r = info.geometry();
         int maxPartScreenNum = 0;
@@ -274,8 +273,8 @@ QString XUtils::getWindowAppName(int winId) {
     if (info.valid()) {
         qDebug() << info.name() << info.desktopFileName() << info.windowClassName() << info.visibleIconName() << info.iconName() << info.visibleName();
         QString name = info.name();
-        if (name.contains(QRegExp("[–—-]"))) {
-            QString tmpName = name.split(QRegExp("[–—-]")).last();
+        if (name.contains(QRegularExpression("[–—-]"))) {
+            QString tmpName = name.split(QRegularExpression("[–—-]")).last();
             return tmpName.trimmed();
         } else {
             return name;

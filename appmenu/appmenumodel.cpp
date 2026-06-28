@@ -26,7 +26,7 @@
 #include "config-X11.h"
 
 #if HAVE_X11
-#include <QX11Info>
+#include <QGuiApplication>
 #include <xcb/xcb.h>
 #endif
 
@@ -41,7 +41,6 @@
 #include <QWindow>
 #include <QScreen>
 #include <QApplication>
-#include <QDesktopWidget>
 #include "../frame/util/XUtils.h"
 
 #include "dbusmenuimporter.h"
@@ -83,13 +82,11 @@ AppMenuModel::AppMenuModel(QObject *parent)
         onActiveWindowChanged(m_winId.toUInt());
     });
 
-    connect(KWindowSystem::self(), &KWindowSystem::activeWindowChanged, this, &AppMenuModel::onActiveWindowChanged);
-    connect(KWindowSystem::self()
-            , static_cast<void (KWindowSystem::*)(WId)>(&KWindowSystem::windowChanged)
+    connect(KX11Extras::self(), &KX11Extras::activeWindowChanged, this, &AppMenuModel::onActiveWindowChanged);
+    connect(KX11Extras::self(), &KX11Extras::windowChanged
             , this
             , &AppMenuModel::onWindowChanged);
-    connect(KWindowSystem::self()
-            , static_cast<void (KWindowSystem::*)(WId)>(&KWindowSystem::windowRemoved)
+    connect(KX11Extras::self(), &KX11Extras::windowRemoved
             , this
             , &AppMenuModel::onWindowRemoved);
 
@@ -102,10 +99,10 @@ AppMenuModel::AppMenuModel(QObject *parent)
     });
 
     connect(this, &AppMenuModel::screenGeometryChanged, this, [this] {
-        onWindowChanged(m_currentWindowId);
+        onWindowChanged(m_currentWindowId, {}, {});
     });
 
-    onActiveWindowChanged(KWindowSystem::activeWindow());
+    onActiveWindowChanged(KX11Extras::activeWindow());
 
     m_serviceWatcher->setConnection(QDBusConnection::sessionBus());
     //if our current DBus connection gets lost, close the menu
@@ -117,12 +114,19 @@ AppMenuModel::AppMenuModel(QObject *parent)
         }
     });
 
-    connect(KWindowSystem::self(), qOverload<WId, NET::Properties, NET::Properties2>(&KWindowSystem::windowChanged),
+    connect(KX11Extras::self(), &KX11Extras::windowChanged,
             this, [this](WId id, NET::Properties properties, NET::Properties2 properties2) {
-        if (KWindowSystem::activeWindow() != id) return;
+        if (KX11Extras::activeWindow() != id) return;
 
         if (properties.testFlag(NET::WMGeometry)) {
-            int currScreenNum = QApplication::desktop()->screenNumber(qobject_cast<QWidget *>(this->parent()));
+            QWidget *parentWidget = qobject_cast<QWidget *>(this->parent());
+            int currScreenNum = 0;
+            if (parentWidget) {
+                QScreen *screen = parentWidget->screen();
+                if (screen) {
+                    currScreenNum = QGuiApplication::screens().indexOf(screen);
+                }
+            }
             int activeWinScreenNum = XUtils::getWindowScreenNum(id);
             if (activeWinScreenNum >= 0 && activeWinScreenNum != currScreenNum) {
                 if (XUtils::checkIfBadWindow(this->m_currentWindowId) || this->m_currentWindowId == id) {
@@ -187,7 +191,7 @@ void AppMenuModel::setMenuAvailable(bool set)
 {
     if (m_menuAvailable != set) {
         m_menuAvailable = set;
-        onWindowChanged(m_currentWindowId);
+        onWindowChanged(m_currentWindowId, {}, {});
         emit menuAvailableChanged();
     }
 }
@@ -267,7 +271,14 @@ void AppMenuModel::onActiveWindowChanged(WId id)
         return;  // temporary fix for losing focus when pressing Alt on deepin v20; or just Alt shortcut ? not sure.
     }
 
-    int currScreenNum = QApplication::desktop()->screenNumber(qobject_cast<QWidget*>(this->parent()));
+    QWidget *parentWidget = qobject_cast<QWidget*>(this->parent());
+    int currScreenNum = 0;
+    if (parentWidget) {
+        QScreen *screen = parentWidget->screen();
+        if (screen) {
+            currScreenNum = QGuiApplication::screens().indexOf(screen);
+        }
+    }
     int activeWinScreenNum = XUtils::getWindowScreenNum(id);
 
     if (activeWinScreenNum >= 0 && activeWinScreenNum != currScreenNum) {
@@ -290,7 +301,11 @@ void AppMenuModel::onActiveWindowChanged(WId id)
 #if HAVE_X11
 
     if (KWindowSystem::isPlatformX11()) {
-        auto *c = QX11Info::connection();
+        auto x11App = qApp->nativeInterface<QNativeInterface::QX11Application>();
+        if (!x11App) {
+            return;
+        }
+        auto *c = x11App->connection();
 
         auto getWindowPropertyString = [c, this](WId id, const QByteArray & name) -> QByteArray {
             QByteArray value;
@@ -409,7 +424,7 @@ void AppMenuModel::onActiveWindowChanged(WId id)
 
 }
 
-void AppMenuModel::onWindowChanged(WId id)
+void AppMenuModel::onWindowChanged(WId id, NET::Properties properties, NET::Properties2 properties2)
 {
     if (m_currentWindowId == id) {
         KWindowInfo info(id, NET::WMState | NET::WMGeometry);
@@ -438,7 +453,7 @@ void AppMenuModel::filterWindow(KWindowInfo &info)
         }
         const bool contained = m_screenGeometry.isNull() || m_screenGeometry.contains(windowCenter);
 
-        const bool isActive = m_filterByActive ? info.win() == KWindowSystem::activeWindow() : true;
+        const bool isActive = m_filterByActive ? info.win() == KX11Extras::activeWindow() : true;
 
         setVisible(isActive && !info.isMinimized() && contained);
     }
@@ -546,7 +561,7 @@ void AppMenuModel::updateApplicationMenu(const QString &serviceName, const QStri
     });
 }
 
-bool AppMenuModel::nativeEventFilter(const QByteArray &eventType, void *message, long *result)
+bool AppMenuModel::nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result)
 {
     Q_UNUSED(result);
 
@@ -569,7 +584,7 @@ bool AppMenuModel::nativeEventFilter(const QByteArray &eventType, void *message,
             if (serviceNameAtom != XCB_ATOM_NONE && objectPathAtom != XCB_ATOM_NONE) { // shouldn't happen
                 if (event->atom == serviceNameAtom || event->atom == objectPathAtom) {
                     // see if we now have a menu
-                    onActiveWindowChanged(KWindowSystem::activeWindow());
+    onActiveWindowChanged(KX11Extras::activeWindow());
                 }
             }
         }

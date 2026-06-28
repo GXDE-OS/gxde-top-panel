@@ -20,8 +20,7 @@
  */
 
 #include <QDebug>
-#include <QX11Info>
-#include <QApplication>
+#include <QGuiApplication>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_ewmh.h>
@@ -32,8 +31,11 @@ static XcbMisc * _xcb_misc_instance = NULL;
 
 XcbMisc::XcbMisc()
 {
-    xcb_intern_atom_cookie_t * cookie = xcb_ewmh_init_atoms(QX11Info::connection(), &m_ewmh_connection);
-    xcb_ewmh_init_atoms_replies(&m_ewmh_connection, cookie, NULL);
+    auto x11App = qApp->nativeInterface<QNativeInterface::QX11Application>();
+    if (x11App) {
+        xcb_intern_atom_cookie_t * cookie = xcb_ewmh_init_atoms(x11App->connection(), &m_ewmh_connection);
+        xcb_ewmh_init_atoms_replies(&m_ewmh_connection, cookie, NULL);
+    }
 }
 
 XcbMisc::~XcbMisc()
@@ -106,19 +108,11 @@ void XcbMisc::set_strut_partial(xcb_window_t winId, Orientation orientation, uin
         break;
     }
 
-//    qDebug() << "xcb_ewmh_set_wm_strut_partial" << endl
-//             << "top" << strut_partial.top << strut_partial.top_start_x << strut_partial.top_end_x << endl
-//             << "left" << strut_partial.left << strut_partial.left_start_y << strut_partial.left_end_y << endl
-//             << "right" << strut_partial.right << strut_partial.right_start_y << strut_partial.right_end_y << endl
-//             << "bottom" << strut_partial.bottom << strut_partial.bottom_start_x << strut_partial.bottom_end_x << endl;
-
     xcb_ewmh_set_wm_strut_partial(&m_ewmh_connection, winId, strut_partial);
 }
 
 void XcbMisc::set_window_icon_geometry(xcb_window_t winId, QRect geo)
 {
-//    qDebug() << Q_FUNC_INFO << winId << geo;
-
     const auto ratio = qApp->devicePixelRatio();
 
     xcb_ewmh_set_wm_icon_geometry(&m_ewmh_connection, winId, geo.x() * ratio, geo.y() * ratio, geo.width() * ratio, geo.height() * ratio);

@@ -18,7 +18,7 @@ QOperationWidget::QOperationWidget(bool leftSide, QWidget *parent)
     this->wrapLayout = new QHBoxLayout(this->wrapLabel);
     this->wrapLayout->setContentsMargins(0, 0, 0, 0);
     this->wrapLayout->setSpacing(5);
-    this->wrapLayout->setMargin(0);
+    this->wrapLayout->setContentsMargins(0, 0, 0, 0);
 
 
     this->closeButton = new QToolButton(this->wrapLabel);

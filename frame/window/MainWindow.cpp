@@ -9,7 +9,6 @@
 #include <DGuiApplicationHelper>
 #include <iostream>
 #include <QScreen>
-#include <QDesktopWidget>
 
 DGUI_USE_NAMESPACE
 
@@ -39,7 +38,6 @@ MainWindow::MainWindow(QScreen *screen, bool enableBlacklist, QWidget *parent)
     this->setFixedHeight(CustomSettings::instance()->getPanelHeight());
     this->m_layout->setContentsMargins(0, 0, 0, 0);
     this->m_layout->setSpacing(0);
-    this->m_layout->setMargin(0);
 
 
 
@@ -63,7 +61,6 @@ MainWindow::MainWindow(QScreen *screen, bool enableBlacklist, QWidget *parent)
 
     setVisible(true);
     // platformwindowhandle only works when the widget is visible...
-    DPlatformWindowHandle::enableDXcbForWindow(this, true);
     m_platformWindowHandle.setEnableBlurWindow(true);
     m_platformWindowHandle.setTranslucentBackground(true);
     m_platformWindowHandle.setWindowRadius(0);  // have no idea why it doesn't work :(
@@ -332,9 +329,11 @@ void TopPanelLauncher::rearrange() {
 
             std::cout << "===========> create top panel on" << p_screen->name().toStdString() << std::endl;
             MainWindow *mw = new MainWindow(p_screen, p_screen != qApp->primaryScreen());
-            connect(mw, &MainWindow::settingActionClicked, this, [this]() {
-                int screenNum = QApplication::desktop()->screenNumber(dynamic_cast<MainWindow *>(sender()));
-                this->m_settingWidget->move(QApplication::desktop()->screen(screenNum)->rect().topLeft());
+            connect(mw, &MainWindow::settingActionClicked, this, [this, mw]() {
+                QScreen *screen = mw->screen();
+                if (screen) {
+                    this->m_settingWidget->move(screen->geometry().topLeft());
+                }
                 this->m_settingWidget->show();
             });
 
@@ -350,9 +349,11 @@ void TopPanelLauncher::rearrange() {
     } else {
         QScreen *p_screen = qApp->primaryScreen();
         MainWindow *mw = new MainWindow(p_screen, p_screen != qApp->primaryScreen());
-        connect(mw, &MainWindow::settingActionClicked, this, [this]() {
-            int screenNum = QApplication::desktop()->screenNumber(dynamic_cast<MainWindow *>(sender()));
-            this->m_settingWidget->move(QApplication::desktop()->screen(screenNum)->rect().topLeft());
+        connect(mw, &MainWindow::settingActionClicked, this, [this, mw]() {
+            QScreen *screen = mw->screen();
+            if (screen) {
+                this->m_settingWidget->move(screen->geometry().topLeft());
+            }
             this->m_settingWidget->show();
         });
         mw->loadPlugins();

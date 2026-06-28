@@ -17,7 +17,7 @@ QClickableLabel::QClickableLabel(QWidget *parent)
     this->metrics = new QFontMetrics(this->font());
 }
 
-void QClickableLabel::enterEvent(QEvent *event) {
+void QClickableLabel::enterEvent(QEnterEvent *event) {
     std::cout << "==========> Set selected color due to enterEvent" << std::endl;
     this->setSelectedColor();
     QWidget::enterEvent(event);

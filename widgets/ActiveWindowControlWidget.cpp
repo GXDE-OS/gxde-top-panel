@@ -9,11 +9,10 @@
 #include "util/XUtils.h"
 #include <QMouseEvent>
 #include <NETWM>
-#include <QtX11Extras/QX11Info>
+#include <QGuiApplication>
 #include <QApplication>
 #include <QScreen>
 #include <QEvent>
-#include <QDesktopWidget>
 #include <iostream>
 
 ActiveWindowControlWidget::ActiveWindowControlWidget(QWidget *parent)
@@ -29,7 +28,7 @@ ActiveWindowControlWidget::ActiveWindowControlWidget(QWidget *parent)
     m_launcherInter->setSync(true, false);
 
     QPalette palette1 = this->palette();
-    palette1.setColor(QPalette::Background, Qt::transparent);
+    palette1.setColor(QPalette::Window, Qt::transparent);
     this->setPalette(palette1);
 
     this->m_layout = new QHBoxLayout(this);
@@ -96,7 +95,7 @@ ActiveWindowControlWidget::ActiveWindowControlWidget(QWidget *parent)
     });
 
     // detect whether active window maximized signal
-    connect(KWindowSystem::self(), qOverload<WId, NET::Properties, NET::Properties2>(&KWindowSystem::windowChanged), this, &ActiveWindowControlWidget::windowChanged);
+    connect(KX11Extras::self(), &KX11Extras::windowChanged, this, &ActiveWindowControlWidget::windowChanged);
 
     this->m_fixTimer = new QTimer(this);
     this->m_fixTimer->setSingleShot(true);
@@ -223,7 +222,7 @@ void ActiveWindowControlWidget::setButtonsVisible(bool visible) {
     }
 }
 
-void ActiveWindowControlWidget::enterEvent(QEvent *event) {
+void ActiveWindowControlWidget::enterEvent(QEnterEvent *event) {
     if (CustomSettings::instance()->isShowGlobalMenuOnHover() && !this->buttonLabelList.isEmpty()
         && XUtils::checkIfWinMaximum(this->currActiveWinId)) {
         this->setMenuVisible(true);
@@ -255,7 +254,7 @@ void ActiveWindowControlWidget::maxButtonClicked() {
 }
 
 void ActiveWindowControlWidget::minButtonClicked() {
-    KWindowSystem::self()->minimizeWindow(this->currActiveWinId);
+    KX11Extras::minimizeWindow(this->currActiveWinId);
 }
 
 void ActiveWindowControlWidget::closeButtonClicked() {
@@ -394,7 +393,7 @@ void ActiveWindowControlWidget::windowChanged(WId id, NET::Properties properties
     }
 
     // we still don't know why active window is 0 when pressing alt in some applications like chrome.
-    if (KWindowSystem::activeWindow() != this->currActiveWinId && KWindowSystem::activeWindow() != 0) {
+    if (KX11Extras::activeWindow() != this->currActiveWinId && KX11Extras::activeWindow() != 0) {
         return;
     }
 
@@ -413,7 +412,7 @@ void ActiveWindowControlWidget::mousePressEvent(QMouseEvent *event) {
                 this->m_launcherInter->Show();
             }
         }
-        KWindowSystem::activateWindow(this->currActiveWinId);
+        KX11Extras::activateWindow(this->currActiveWinId);
     }
     QWidget::mousePressEvent(event);
 }
@@ -426,13 +425,16 @@ void ActiveWindowControlWidget::mouseReleaseEvent(QMouseEvent *event) {
 void ActiveWindowControlWidget::mouseMoveEvent(QMouseEvent *event) {
     if (this->mouseClicked && CustomSettings::instance()->isAllowDragWindowWhenMax()) {
         if (XUtils::checkIfWinMaximum(this->currActiveWinId)) {
-            NETRootInfo ri(QX11Info::connection(), NET::WMMoveResize);
-            ri.moveResizeRequest(
-                    this->currActiveWinId,
-                    event->globalX() * this->devicePixelRatioF(),
-                    (this->height() + event->globalY()) * this->devicePixelRatioF(),
-                    NET::Move
-            );
+            auto x11App = qApp->nativeInterface<QNativeInterface::QX11Application>();
+            if (x11App) {
+                NETRootInfo ri(x11App->connection(), NET::WMMoveResize);
+                ri.moveResizeRequest(
+                        this->currActiveWinId,
+                        event->globalPosition().x() * this->devicePixelRatioF(),
+                        (this->height() + event->globalPosition().y()) * this->devicePixelRatioF(),
+                        NET::Move
+                );
+            }
             this->mouseClicked = false;
         }
     }
@@ -485,7 +487,7 @@ bool ActiveWindowControlWidget::eventFilter(QObject *watched, QEvent *event) {
                 return false;
             }
 
-            const QPointF &windowLocalPos = m_menuWidget->mapFromGlobal(e->globalPos());
+            const QPointF &windowLocalPos = m_menuWidget->mapFromGlobal(e->globalPosition());
 
             auto *item = dynamic_cast<QClickableLabel *>(m_menuWidget->childAt(windowLocalPos.x(), windowLocalPos.y()));
             if (!item) {
@@ -524,7 +526,11 @@ void ActiveWindowControlWidget::leaveTopPanel() {
 }
 
 int ActiveWindowControlWidget::currScreenNum() {
-    return QApplication::desktop()->screenNumber(this);
+    QScreen *screen = this->screen();
+    if (screen) {
+        return QGuiApplication::screens().indexOf(screen);
+    }
+    return 0;
 }
 
 void ActiveWindowControlWidget::requestActivateIndex(int buttonIndex) {

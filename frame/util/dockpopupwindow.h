@@ -22,8 +22,8 @@
 #ifndef DOCKPOPUPWINDOW_H
 #define DOCKPOPUPWINDOW_H
 
-#include <darrowrectangle.h>
-#include <dregionmonitor.h>
+#include <DArrowRectangle>
+#include <DRegionMonitor>
 #include <DWindowManagerHelper>
 
 DWIDGET_USE_NAMESPACE
@@ -56,7 +56,7 @@ signals:
 
 protected:
     void showEvent(QShowEvent *e);
-    void enterEvent(QEvent *e);
+    void enterEvent(QEnterEvent *e);
     bool eventFilter(QObject *o, QEvent *e);
 
 private slots:

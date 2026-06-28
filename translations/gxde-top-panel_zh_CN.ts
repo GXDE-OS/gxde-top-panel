@@ -12,14 +12,14 @@
 <context>
     <name>ActiveWindowControlWidget</name>
     <message>
-        <location filename="../widgets/ActiveWindowControlWidget.cpp" line="57"/>
+        <location filename="../widgets/ActiveWindowControlWidget.cpp" line="56"/>
         <source>   ▸   </source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../widgets/ActiveWindowControlWidget.cpp" line="158"/>
-        <location filename="../widgets/ActiveWindowControlWidget.cpp" line="162"/>
-        <location filename="../widgets/ActiveWindowControlWidget.cpp" line="194"/>
+        <location filename="../widgets/ActiveWindowControlWidget.cpp" line="157"/>
+        <location filename="../widgets/ActiveWindowControlWidget.cpp" line="161"/>
+        <location filename="../widgets/ActiveWindowControlWidget.cpp" line="193"/>
         <source>Desktop</source>
         <translation>桌面</translation>
     </message>

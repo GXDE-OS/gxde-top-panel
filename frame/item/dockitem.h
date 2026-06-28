@@ -79,7 +79,7 @@ protected:
     bool event(QEvent *event) override;
     void paintEvent(QPaintEvent *e) override;
     void mousePressEvent(QMouseEvent *e) override;
-    void enterEvent(QEvent *e) override;
+    void enterEvent(QEnterEvent *e) override;
     void leaveEvent(QEvent *e) override;
 
     const QRect perfectIconRect() const;

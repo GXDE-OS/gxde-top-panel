@@ -10,6 +10,9 @@
 #include <QHBoxLayout>
 #include <QToolButton>
 #include <QMutex>
+#include <KWindowSystem>
+#include <KX11Extras>
+#include <NETWM>
 #include <com_deepin_dde_daemon_dock.h>
 #include <QMenuBar>
 #include "../appmenu/appmenumodel.h"
@@ -47,7 +50,7 @@ public slots:
 
 protected:
     void mouseDoubleClickEvent(QMouseEvent *event) override;
-    void enterEvent(QEvent *event) override;
+    void enterEvent(QEnterEvent *event) override;
     void leaveEvent(QEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;

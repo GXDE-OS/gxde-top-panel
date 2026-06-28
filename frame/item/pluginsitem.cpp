@@ -53,7 +53,7 @@ PluginsItem::PluginsItem(PluginsItemInterface *const pluginInter, const QString 
     QBoxLayout *hLayout = new QHBoxLayout;
     hLayout->addWidget(m_centralWidget);
     hLayout->setSpacing(0);
-    hLayout->setMargin(0);
+    hLayout->setContentsMargins(0, 0, 0, 0);
 
     setLayout(hLayout);
     setAccessibleName(pluginInter->pluginName());
@@ -202,7 +202,7 @@ void PluginsItem::mouseReleaseEvent(QMouseEvent *e)
         mouseClicked();
 }
 
-void PluginsItem::enterEvent(QEvent *event)
+void PluginsItem::enterEvent(QEnterEvent *event)
 {
     if (checkGSettingsControl()) {
         return;
@@ -289,7 +289,7 @@ void PluginsItem::mouseClicked()
     if (!command.isEmpty()) {
         QProcess *proc = new QProcess(this);
 
-        connect(proc, static_cast<void (QProcess::*)(int)>(&QProcess::finished), proc, &QProcess::deleteLater);
+        connect(proc, &QProcess::finished, proc, &QProcess::deleteLater);
 
         proc->startDetached(command);
         return;

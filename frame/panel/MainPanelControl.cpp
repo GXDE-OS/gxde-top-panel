@@ -25,7 +25,7 @@ MainPanelControl::MainPanelControl(QWidget *parent)
     this->setAcceptDrops(true);
 
     QPalette palette = this->palette();
-    palette.setColor(QPalette::Background, Qt::transparent);
+    palette.setColor(QPalette::Window, Qt::transparent);
     this->setPalette(palette);
 
     this->m_buttonWidget->hide();
@@ -51,14 +51,14 @@ void MainPanelControl::init() {
     connect(this->m_buttonWidget, &QOperationWidget::maxButtonClicked, this->activeWindowControlWidget, &ActiveWindowControlWidget::maxButtonClicked);
     connect(this->m_buttonWidget, &QOperationWidget::closeButtonClicked, this->activeWindowControlWidget, &ActiveWindowControlWidget::closeButtonClicked);
 
-    m_mainPanelLayout->setMargin(0);
+    m_mainPanelLayout->setContentsMargins(0, 0, 0, 0);
     m_mainPanelLayout->setContentsMargins(0, 0, 5, 0);
     m_mainPanelLayout->setSpacing(0);
 
     // 托盘
     m_trayAreaWidget->setLayout(m_trayAreaLayout);
     m_trayAreaWidget->setAccessibleName("trayarea");
-    m_trayAreaLayout->setMargin(0);
+    m_trayAreaLayout->setContentsMargins(0, 0, 0, 0);
     m_trayAreaLayout->setSpacing(0);
     m_trayAreaLayout->setContentsMargins(0, 2, 0, 2);
 
@@ -66,7 +66,7 @@ void MainPanelControl::init() {
     m_pluginAreaWidget->setLayout(m_pluginLayout);
     m_pluginAreaWidget->setAcceptDrops(true);
     m_pluginAreaWidget->setAccessibleName("pluginarea");
-    m_pluginLayout->setMargin(0);
+    m_pluginLayout->setContentsMargins(0, 0, 0, 0);
     m_pluginLayout->setSpacing(8);
     m_pluginLayout->setContentsMargins(10, 0, 10, 0);
 
@@ -74,7 +74,7 @@ void MainPanelControl::init() {
     m_trayAreaWidget->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
 
 //    this->m_xdo = xdo_new(nullptr);
-    connect(KWindowSystem::self(), &KWindowSystem::activeWindowChanged, this->activeWindowControlWidget, &ActiveWindowControlWidget::activeWindowInfoChanged);
+    connect(KX11Extras::self(), &KX11Extras::activeWindowChanged, this->activeWindowControlWidget, &ActiveWindowControlWidget::activeWindowInfoChanged);
     connect(this, &MainPanelControl::emptyAreaDoubleClicked, this->activeWindowControlWidget, &ActiveWindowControlWidget::maximizeWindow);
     this->activeWindowControlWidget->activeWindowInfoChanged();
 }
@@ -439,7 +439,7 @@ bool MainPanelControl::eventFilter(QObject *watched, QEvent *event) {
     if (item->itemType() != DockItem::App && item->itemType() != DockItem::Plugins && item->itemType() != DockItem::FixedPlugin)
         return false;
 
-    const QPoint pos = mouseEvent->globalPos();
+    const QPoint pos = mouseEvent->globalPosition().toPoint();
     const QPoint distance = pos - m_mousePressPos;
     if (distance.manhattanLength() < QApplication::startDragDistance())
         return false;
@@ -451,7 +451,7 @@ bool MainPanelControl::eventFilter(QObject *watched, QEvent *event) {
 
 void MainPanelControl::mousePressEvent(QMouseEvent *e) {
     if (e->button() == Qt::LeftButton) {
-        m_mousePressPos = e->globalPos();
+        m_mousePressPos = e->globalPosition().toPoint();
     }
 
     QWidget::mousePressEvent(e);

@@ -1,4 +1,4 @@
-gxde-top-panel (0.6.13) UNRELEASED; urgency=medium
+gxde-top-panel (1.0.0) UNRELEASED; urgency=medium
 
   * Initial release. (Closes: #nnnn)  <nnnn is the bug number of your ITP>
   * 依赖修改为 libgxframeworkdbus2
@@ -6,5 +6,6 @@ gxde-top-panel (0.6.13) UNRELEASED; urgency=medium
   * 修复高分屏下图标模糊的问题
   * 修改虚拟键盘插件名称
   * 只允许同时开启一个顶栏
+  * Qt6 迁移
 
- -- gfdgd_xi <3025613752@qq.com>  Fri, 26 Jun 2026 10:21:25 +0800
+ -- gfdgd_xi <3025613752@qq.com>  Sun, 28 Jun 2026 21:43:20 +0800

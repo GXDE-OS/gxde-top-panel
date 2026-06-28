@@ -11,14 +11,14 @@ void TipsWidget::setText(const QString &text)
 {
     m_text = text;
 
-    setFixedSize(fontMetrics().width(text) + 6, fontMetrics().height());
+    setFixedSize(fontMetrics().horizontalAdvance(text) + 6, fontMetrics().height());
 
     update();
 }
 
 void TipsWidget::refreshFont()
 {
-    setFixedSize(fontMetrics().width(m_text) + 6, fontMetrics().height());
+    setFixedSize(fontMetrics().horizontalAdvance(m_text) + 6, fontMetrics().height());
     update();
 }
 
