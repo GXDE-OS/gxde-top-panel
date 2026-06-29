@@ -27,7 +27,7 @@ if (NOT (${CMAKE_BUILD_TYPE} MATCHES "Debug"))
 endif ()
 
 # Generate .qm files from .ts files
-find_program(QT_LRELEASE_EXECUTABLE lrelease)
+find_program(QT_LRELEASE_EXECUTABLE /usr/lib/qt6/bin/lrelease)
 file(GLOB TS_FILES "${CMAKE_SOURCE_DIR}/translations/*.ts")
 set(QM_FILES)
 foreach(TS_FILE ${TS_FILES})
