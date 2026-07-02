@@ -1,4 +1,4 @@
-gxde-top-panel (1.0.0) UNRELEASED; urgency=medium
+gxde-top-panel (1.0.1) UNRELEASED; urgency=medium
 
   * Initial release. (Closes: #nnnn)  <nnnn is the bug number of your ITP>
   * 依赖修改为 libgxframeworkdbus2
@@ -7,5 +7,6 @@ gxde-top-panel (1.0.0) UNRELEASED; urgency=medium
   * 修改虚拟键盘插件名称
   * 只允许同时开启一个顶栏
   * Qt6 迁移
+  * 修复顶栏不会根据任务栏变化自动调整位置和大小导致显示异常的问题（https://gitee.com/GXDE-OS/GXDE/issues/IDNWHX ）
 
- -- gfdgd_xi <3025613752@qq.com>  Sun, 28 Jun 2026 21:43:20 +0800
+ -- gfdgd_xi <3025613752@qq.com>  Thu, 02 Jul 2026 16:12:56 +0800

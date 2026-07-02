@@ -212,6 +212,9 @@ void MainWindow::initConnections() {
     connect(m_mainPanel, &MainPanelControl::itemMoved, DockItemManager::instance(), &DockItemManager::itemMoved, Qt::DirectConnection);
     connect(m_mainPanel, &MainPanelControl::itemAdded, DockItemManager::instance(), &DockItemManager::itemAdded, Qt::DirectConnection);
 
+    // 因为 DDE15 与 DDE20 的接口有差异，
+    // DDE15 需要通过 FrontendWindowRectChanged 而不是 PositionChanged 检测任务栏的位置和大小变化
+    connect(this->m_dockInter, &DBusDock::FrontendWindowRectChanged, this, &MainWindow::resizeMainPanelWindow);
     connect(this->m_dockInter, &DBusDock::PositionChanged, this, &MainWindow::resizeMainPanelWindow);
     connect(this->m_dockInter, &DBusDock::DisplayModeChanged, this, &MainWindow::resizeMainPanelWindow);
     connect(this->m_dockInter, &DBusDock::HideModeChanged, this, &MainWindow::resizeMainPanelWindow);
