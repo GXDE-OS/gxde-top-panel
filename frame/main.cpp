@@ -4,6 +4,8 @@
 
 #include <DApplication>
 #include <DGuiApplicationHelper>
+#include <QDBusMetaType>
+#include <QMap>
 #include <unistd.h>
 #include <iostream>
 #include "window/MainWindow.h"
@@ -17,6 +19,8 @@ DUTIL_USE_NAMESPACE
 
 
 int main(int argc, char *argv[]) {
+    // 修复无限崩溃被拉回
+    qDBusRegisterMetaType<QMap<QString, QString>>();
 
     DApplication app(argc, argv);
 
