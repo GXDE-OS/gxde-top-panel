@@ -136,8 +136,8 @@ void DockItemManager::itemMoved(DockItem *const sourceItem, DockItem *const targ
     const int moveIndex = m_itemList.indexOf(sourceItem);
     const int replaceIndex = m_itemList.indexOf(targetItem);
 
-    m_itemList.removeAt(moveIndex);
-    m_itemList.insert(replaceIndex, sourceItem);
+    //m_itemList.removeAt(moveIndex);
+    //m_itemList.insert(replaceIndex, sourceItem);
 
     // update plugins sort key if order changed
     if (moveType == DockItem::Plugins || replaceType == DockItem::Plugins
