@@ -26,6 +26,12 @@ TopPanelSettings::TopPanelSettings(DockItemManager *itemManager, QScreen *screen
         , m_itemManager(itemManager)
         , m_screen(screen)
 {
+    if (qgetenv("WAYLAND_DISPLAY") != "") {
+        // Wayland 下因为 deepin-daemon 异常，获取不到数据
+        // 直接设置马上超时以避免卡住
+        m_dockInter->setTimeout(1);
+    }
+    m_dockInter->setTimeout(100);
     m_primaryRawRect = screen->geometry();
     m_primaryRawRect.setHeight(m_primaryRawRect.height() * screen->devicePixelRatio());
     m_primaryRawRect.setWidth(m_primaryRawRect.width() * screen->devicePixelRatio());

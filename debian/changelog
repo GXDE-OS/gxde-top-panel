@@ -1,4 +1,4 @@
-gxde-top-panel (1.0.3) UNRELEASED; urgency=medium
+gxde-top-panel (1.0.4) UNRELEASED; urgency=medium
 
   * Initial release. (Closes: #nnnn)  <nnnn is the bug number of your ITP>
   * 依赖修改为 libgxframeworkdbus2
@@ -10,5 +10,7 @@ gxde-top-panel (1.0.3) UNRELEASED; urgency=medium
   * 修复顶栏不会根据任务栏变化自动调整位置和大小导致显示异常的问题（https://gitee.com/GXDE-OS/GXDE/issues/IDNWHX ）
   * 修复无限崩溃被拉回的问题
   * 修复插件被拖动时会段错误崩溃的问题
+  * Wayland 下使用 XWayland 运行
+  * 修复 XWayland 下读取异常接口导致程序阻塞过久无法正常使用的问题
 
- -- gfdgd_xi <3025613752@qq.com>  Mon, 06 Jul 2026 16:40:05 +0800
+ -- gfdgd_xi <3025613752@qq.com>  Sat, 18 Jul 2026 12:44:26 +0800

@@ -22,6 +22,8 @@ int main(int argc, char *argv[]) {
     // 修复无限崩溃被拉回
     qDBusRegisterMetaType<QMap<QString, QString>>();
 
+    qputenv("QT_QPA_PLATFORM", "xcb");
+
     DApplication app(argc, argv);
 
     QString locale = QLocale::system().name();

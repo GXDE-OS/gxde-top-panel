@@ -43,6 +43,11 @@ AbstractPluginsController::AbstractPluginsController(QObject *parent)
         , m_dbusDaemonInterface(QDBusConnection::sessionBus().interface())
         , m_dockDaemonInter(new DockDaemonInter("com.deepin.dde.daemon.Dock", "/com/deepin/dde/daemon/Dock", QDBusConnection::sessionBus(), this))
 {
+    if (qgetenv("WAYLAND_DISPLAY") != "") {
+        // Wayland 下因为 deepin-daemon 异常，获取不到数据
+        // 直接设置马上超时以避免卡住
+        m_dockDaemonInter->setTimeout(1);
+    }
     qApp->installEventFilter(this);
 
     refreshPluginSettings();
