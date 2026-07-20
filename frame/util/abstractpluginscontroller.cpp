@@ -358,7 +358,11 @@ void AbstractPluginsController::refreshPluginSettings()
     // reload all plugin items for sort order or container
     QMap<PluginsItemInterface *, QMap<QString, QObject *>> pluginsMapTemp = m_pluginsMap;
     for (auto it = pluginsMapTemp.constBegin(); it != pluginsMapTemp.constEnd(); ++it) {
-        const QList<QString> &itemKeyList = it.value().keys();
+        // "pluginloader" is a QPluginLoader, not a PluginsItem,
+        // and if it is mixed in itemRemoved, they will be static_cast to
+        // PluginsItem and crash.
+        QList<QString> itemKeyList = it.value().keys();
+        itemKeyList.removeAll(QStringLiteral("pluginloader"));
         for (auto key : itemKeyList) {
             itemRemoved(it.key(), key);
         }

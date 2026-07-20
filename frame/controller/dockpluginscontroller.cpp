@@ -67,7 +67,8 @@ void DockPluginsController::itemAdded(PluginsItemInterface *const itemInter, con
 
 void DockPluginsController::itemUpdate(PluginsItemInterface *const itemInter, const QString &itemKey)
 {
-    PluginsItem *item = static_cast<PluginsItem *>(pluginItemAt(itemInter, itemKey));
+    // Using qobject_cast，safely return in case that itemKey is NOT PluginsItem
+    PluginsItem *item = qobject_cast<PluginsItem *>(pluginItemAt(itemInter, itemKey));
     if (!item)
         return;
 
@@ -78,7 +79,7 @@ void DockPluginsController::itemUpdate(PluginsItemInterface *const itemInter, co
 
 void DockPluginsController::itemRemoved(PluginsItemInterface *const itemInter, const QString &itemKey)
 {
-    PluginsItem *item = static_cast<PluginsItem *>(pluginItemAt(itemInter, itemKey));
+    PluginsItem *item = qobject_cast<PluginsItem *>(pluginItemAt(itemInter, itemKey));
     if (!item)
         return;
 
