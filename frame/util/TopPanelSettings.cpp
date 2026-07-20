@@ -18,7 +18,7 @@ extern const QPoint rawXPosition(const QPoint &scaledPos);
 
 TopPanelSettings::TopPanelSettings(DockItemManager *itemManager, QScreen *screen, QWidget *parent)
         : QObject(parent)
-        , m_dockInter(new DBusDock("com.deepin.dde.daemon.Dock", "/com/deepin/dde/daemon/Dock", QDBusConnection::sessionBus(), this))
+        , m_dockInter(new DBusDock(this))
         , m_dockWindowSize(CustomSettings::instance()->getPanelHeight())
         , m_position(Top)
         , m_displayMode(Dock::Efficient)
@@ -26,12 +26,13 @@ TopPanelSettings::TopPanelSettings(DockItemManager *itemManager, QScreen *screen
         , m_itemManager(itemManager)
         , m_screen(screen)
 {
-    if (qgetenv("WAYLAND_DISPLAY") != "") {
-        // Wayland 下因为 deepin-daemon 异常，获取不到数据
-        // 直接设置马上超时以避免卡住
+    if (!DockInterface::usingGXDEDock() && qgetenv("WAYLAND_DISPLAY") != "") {
+        // 回退到 deepin-daemon 时，Wayland 下因为 deepin-daemon 异常，获取不到数据
+        // 直接设置马上超时以避免卡住；gxde-dock-daemon 在 Wayland 下工作正常，无需如此
         m_dockInter->setTimeout(1);
+    } else {
+        m_dockInter->setTimeout(100);
     }
-    m_dockInter->setTimeout(100);
     m_primaryRawRect = screen->geometry();
     m_primaryRawRect.setHeight(m_primaryRawRect.height() * screen->devicePixelRatio());
     m_primaryRawRect.setWidth(m_primaryRawRect.width() * screen->devicePixelRatio());

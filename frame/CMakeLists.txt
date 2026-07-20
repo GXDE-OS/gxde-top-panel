@@ -14,6 +14,7 @@ find_package(Dtk6Core REQUIRED)
 find_package(Dtk6CMake REQUIRED)
 find_package(KF6WindowSystem REQUIRED)
 find_package(DFrameworkdbusQt6 REQUIRED)
+find_package(LayerShellQt REQUIRED)
 
 pkg_check_modules(XCB_EWMH REQUIRED xcb-ewmh x11)
 pkg_check_modules(QGSettings REQUIRED gsettings-qt6)
@@ -57,6 +58,7 @@ target_link_libraries(${BIN_NAME} PRIVATE
         ${DtkGUI_LIBRARIES}
         Qt6::Svg
         KF6::WindowSystem
+        LayerShellQt::Interface
         xdo
         X11
         )

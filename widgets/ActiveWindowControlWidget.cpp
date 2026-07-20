@@ -17,7 +17,7 @@
 
 ActiveWindowControlWidget::ActiveWindowControlWidget(QWidget *parent)
     : QWidget(parent)
-    , m_appInter(new DBusDock("com.deepin.dde.daemon.Dock", "/com/deepin/dde/daemon/Dock", QDBusConnection::sessionBus(), this))
+    , m_appInter(new DBusDock(this))
     , mouseClicked(false)
     , m_currentIndex(-1)
     , m_currentMenu(nullptr)

@@ -8,6 +8,7 @@
 #include <QMap>
 #include <unistd.h>
 #include <iostream>
+#include <LayerShellQt/Shell>
 #include "window/MainWindow.h"
 
 DWIDGET_USE_NAMESPACE
@@ -22,7 +23,16 @@ int main(int argc, char *argv[]) {
     // 修复无限崩溃被拉回
     qDBusRegisterMetaType<QMap<QString, QString>>();
 
-    qputenv("QT_QPA_PLATFORM", "xcb");
+    // If a single Wayland display is detected, then it IS wayland.
+    // Under wayland, we enforce QT_QPA_PLATFORM to be wayland, otherwise
+    // laytershell will MALFUNCTION!!
+    if (!qgetenv("WAYLAND_DISPLAY").isEmpty()) {
+        qputenv("QT_QPA_PLATFORM", "wayland");
+        LayerShellQt::Shell::useLayerShell();
+    } else {
+        // Otherwise DXCB is good to go.
+        qputenv("QT_QPA_PLATFORM", "xcb");
+    }
 
     DApplication app(argc, argv);
 

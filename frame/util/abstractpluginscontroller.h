@@ -25,14 +25,14 @@
 #include "pluginproxyinterface.h"
 #include "pluginloader.h"
 
-#include <com_deepin_dde_daemon_dock.h>
+#include "dockinterface.h"
 
 #include <QPluginLoader>
 #include <QList>
 #include <QMap>
 #include <QDBusConnectionInterface>
 
-using DockDaemonInter = com::deepin::dde::daemon::Dock;
+using DockDaemonInter = DockInterface;
 
 class PluginsItemInterface;
 class AbstractPluginsController : public QObject, PluginProxyInterface

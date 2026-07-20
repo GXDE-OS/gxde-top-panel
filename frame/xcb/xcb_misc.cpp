@@ -34,7 +34,7 @@ XcbMisc::XcbMisc()
     auto x11App = qApp->nativeInterface<QNativeInterface::QX11Application>();
     if (x11App) {
         xcb_intern_atom_cookie_t * cookie = xcb_ewmh_init_atoms(x11App->connection(), &m_ewmh_connection);
-        xcb_ewmh_init_atoms_replies(&m_ewmh_connection, cookie, NULL);
+        m_valid = xcb_ewmh_init_atoms_replies(&m_ewmh_connection, cookie, NULL);
     }
 }
 
@@ -54,6 +54,9 @@ XcbMisc * XcbMisc::instance()
 
 void XcbMisc::set_window_type(xcb_window_t winId, WindowType winType)
 {
+    if (!m_valid)
+        return;
+
     xcb_atom_t atoms[1];
 
     switch (winType) {
@@ -72,6 +75,9 @@ void XcbMisc::set_window_type(xcb_window_t winId, WindowType winType)
 
 void XcbMisc::clear_strut_partial(xcb_window_t winId)
 {
+    if (!m_valid)
+        return;
+
     xcb_ewmh_wm_strut_partial_t strutPartial;
     memset(&strutPartial, 0, sizeof(xcb_ewmh_wm_strut_partial_t));
 
@@ -80,6 +86,9 @@ void XcbMisc::clear_strut_partial(xcb_window_t winId)
 
 void XcbMisc::set_strut_partial(xcb_window_t winId, Orientation orientation, uint strut, uint start, uint end)
 {
+    if (!m_valid)
+        return;
+
     xcb_ewmh_wm_strut_partial_t strut_partial;
     memset(&strut_partial, 0, sizeof(xcb_ewmh_wm_strut_partial_t));
 
@@ -113,6 +122,9 @@ void XcbMisc::set_strut_partial(xcb_window_t winId, Orientation orientation, uin
 
 void XcbMisc::set_window_icon_geometry(xcb_window_t winId, QRect geo)
 {
+    if (!m_valid)
+        return;
+
     const auto ratio = qApp->devicePixelRatio();
 
     xcb_ewmh_set_wm_icon_geometry(&m_ewmh_connection, winId, geo.x() * ratio, geo.y() * ratio, geo.width() * ratio, geo.height() * ratio);

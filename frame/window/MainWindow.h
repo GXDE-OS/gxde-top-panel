@@ -12,13 +12,17 @@
 #include "xcb/xcb_misc.h"
 #include "dbus/sni/statusnotifierwatcher_interface.h"
 #include "util/CustomSettings.h"
+#include "dockinterface.h"
 #include "../widgets/mainsettingwidget.h"
 
+namespace LayerShellQt {
+class Window;
+}
 
 DWIDGET_USE_NAMESPACE
 
 using namespace Dock;
-using DBusDock = com::deepin::dde::daemon::Dock;    // use dbus to get the height/width, position and hide mode of the dock
+using DBusDock = DockInterface;
 
 class MainWindow : public DBlurEffectWidget
 {
@@ -44,9 +48,12 @@ private slots:
 
 private:
     void mousePressEvent(QMouseEvent *e);
+    void resizeEvent(QResizeEvent *e) override;
     void resizeMainPanelWindow();
     void clearStrutPartial();
     void setStrutPartial();
+    void initLayerShell(QScreen *screen);
+    void updateLayerShellExclusiveZone();
     void initConnections();
     void initSNIHost();
 
@@ -56,6 +63,8 @@ private:
     MainPanelControl *m_mainPanel;
     TopPanelSettings *m_settings;
     XcbMisc *m_xcbMisc;
+    bool m_isWayland;
+    LayerShellQt::Window *m_layerShell;
     Position m_curDockPos;
     DPlatformWindowHandle m_platformWindowHandle;
     QVBoxLayout *m_layout;
@@ -73,6 +82,7 @@ public:
 private slots:
     void monitorsChanged();
     void primaryChanged();
+    void onScreenRemoved(QScreen *screen);
 
 private:
     MainSettingWidget *m_settingWidget;
@@ -80,7 +90,10 @@ private:
     QScreen *primaryScreen;
     DBusDisplay *m_display;
     QMap<QScreen *, MainWindow *> mwMap;
+    QTimer *m_rearrangeTimer;
+    bool m_isWayland;
     void rearrange();
+    MainWindow *createPanel(QScreen *screen);
 };
 
 

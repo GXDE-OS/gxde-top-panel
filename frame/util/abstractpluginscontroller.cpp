@@ -41,11 +41,12 @@ static const QStringList CompatiblePluginApiList {
 AbstractPluginsController::AbstractPluginsController(QObject *parent)
         : QObject(parent)
         , m_dbusDaemonInterface(QDBusConnection::sessionBus().interface())
-        , m_dockDaemonInter(new DockDaemonInter("com.deepin.dde.daemon.Dock", "/com/deepin/dde/daemon/Dock", QDBusConnection::sessionBus(), this))
+        , m_dockDaemonInter(new DockDaemonInter(this))
 {
-    if (qgetenv("WAYLAND_DISPLAY") != "") {
-        // Wayland 下因为 deepin-daemon 异常，获取不到数据
+    if (!DockInterface::usingGXDEDock() && qgetenv("WAYLAND_DISPLAY") != "") {
+        // (回退到 deepin-daemon 时) Wayland 下因为 deepin-daemon 异常，获取不到数据
         // 直接设置马上超时以避免卡住
+        // gxde-dock-daemon 在 Wayland 下工作正常，无需如此
         m_dockDaemonInter->setTimeout(1);
     }
     qApp->installEventFilter(this);

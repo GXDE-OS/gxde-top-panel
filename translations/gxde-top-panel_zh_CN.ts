@@ -4,7 +4,7 @@
 <context>
     <name>AbstractPluginsController</name>
     <message>
-        <location filename="../frame/util/abstractpluginscontroller.cpp" line="228"/>
+        <location filename="../frame/util/abstractpluginscontroller.cpp" line="233"/>
         <source>The plugin %1 is not compatible with the system.</source>
         <translation>插件 %1 与系统不兼容</translation>
     </message>
@@ -304,17 +304,17 @@ p, li { white-space: pre-wrap; }
 <context>
     <name>TopPanelSettings</name>
     <message>
-        <location filename="../frame/util/TopPanelSettings.cpp" line="37"/>
+        <location filename="../frame/util/TopPanelSettings.cpp" line="44"/>
         <source>Plugins</source>
         <translation>插件</translation>
     </message>
     <message>
-        <location filename="../frame/util/TopPanelSettings.cpp" line="43"/>
+        <location filename="../frame/util/TopPanelSettings.cpp" line="50"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="../frame/util/TopPanelSettings.cpp" line="48"/>
+        <location filename="../frame/util/TopPanelSettings.cpp" line="55"/>
         <source>Restart</source>
         <translation>重启 Panel</translation>
     </message>

@@ -11,10 +11,11 @@
 #include <QMenu>
 #include <controller/dockitemmanager.h>
 #include "dbus/dbusdisplay.h"
+#include "dockinterface.h"
 #include "CustomSettings.h"
 
 using namespace Dock;
-using DBusDock = com::deepin::dde::daemon::Dock;    // use dbus to get the height/width, position and hide mode of the dock
+using DBusDock = DockInterface;
 
 class TopPanelSettings : public QObject
 {

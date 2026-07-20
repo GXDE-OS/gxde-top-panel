@@ -33,7 +33,7 @@ DockItemManager *DockItemManager::INSTANCE = nullptr;
 
 DockItemManager::DockItemManager(QObject *parent)
         : QObject(parent)
-        , m_appInter(new DBusDock("com.deepin.dde.daemon.Dock", "/com/deepin/dde/daemon/Dock", QDBusConnection::sessionBus(), this))
+        , m_appInter(new DBusDock(this))
         , m_pluginsInter(new DockPluginsController(this))
         , m_loadFinished(false)
 {

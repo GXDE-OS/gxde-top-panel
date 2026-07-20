@@ -54,6 +54,8 @@ public:
 private:
     XcbMisc();
 
+    // False under Wayland
+    bool m_valid = false;
     xcb_ewmh_connection_t m_ewmh_connection;
 };
 

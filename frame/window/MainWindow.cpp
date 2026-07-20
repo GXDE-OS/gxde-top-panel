@@ -9,6 +9,9 @@
 #include <DGuiApplicationHelper>
 #include <iostream>
 #include <QScreen>
+#include <QTimer>
+#include <QWindow>
+#include <LayerShellQt/Window>
 
 DGUI_USE_NAMESPACE
 
@@ -18,9 +21,11 @@ DGUI_USE_NAMESPACE
 MainWindow::MainWindow(QScreen *screen, bool enableBlacklist, QWidget *parent)
     : DBlurEffectWidget(parent)
     , m_itemManager(new DockItemManager(this))
-    , m_dockInter(new DBusDock("com.deepin.dde.daemon.Dock", "/com/deepin/dde/daemon/Dock", QDBusConnection::sessionBus(), this))
+    , m_dockInter(new DBusDock(this))
     , m_mainPanel(new MainPanelControl(this))
     , m_xcbMisc(XcbMisc::instance())
+    , m_isWayland(Utils::isWayland())
+    , m_layerShell(nullptr)
     , m_platformWindowHandle(this, this)
     , m_layout(new QVBoxLayout(this))
     , m_dbusDaemonInterface(QDBusConnection::sessionBus().interface())
@@ -42,7 +47,11 @@ MainWindow::MainWindow(QScreen *screen, bool enableBlacklist, QWidget *parent)
 
 
     m_settings = new TopPanelSettings(m_itemManager, screen, this);
-    m_xcbMisc->set_window_type(winId(), XcbMisc::Dock);
+    if (m_isWayland) {
+        initLayerShell(screen);
+    } else {
+        m_xcbMisc->set_window_type(winId(), XcbMisc::Dock);
+    }
     m_mainPanel->setDisplayMode(m_settings->displayMode());
     m_mainPanel->move(0, 0);
 
@@ -60,14 +69,19 @@ MainWindow::MainWindow(QScreen *screen, bool enableBlacklist, QWidget *parent)
     this->adjustPosition();
 
     setVisible(true);
-    // platformwindowhandle only works when the widget is visible...
-    m_platformWindowHandle.setEnableBlurWindow(true);
-    m_platformWindowHandle.setTranslucentBackground(true);
-    m_platformWindowHandle.setWindowRadius(0);  // have no idea why it doesn't work :(
-    m_platformWindowHandle.setShadowOffset(QPoint(0, 5));
-    m_platformWindowHandle.setShadowColor(QColor(0, 0, 0, 0.3 * 255));
-    m_platformWindowHandle.setBorderWidth(1);
-        
+    if (!m_isWayland) {
+        // platformwindowhandle only works when the widget is visible...
+        m_platformWindowHandle.setEnableBlurWindow(true);
+        m_platformWindowHandle.setTranslucentBackground(true);
+        m_platformWindowHandle.setWindowRadius(0);  // have no idea why it doesn't work :(
+        m_platformWindowHandle.setShadowOffset(QPoint(0, 5));
+        m_platformWindowHandle.setShadowColor(QColor(0, 0, 0, 0.3 * 255));
+        m_platformWindowHandle.setBorderWidth(1);
+    } else {
+        setBlurEnabled(true);
+    }
+
+
     qreal value = CustomSettings::instance()->getPanelOpacity();
     CustomSettings::instance()->setPanelOpacity(value);
 
@@ -79,6 +93,12 @@ MainWindow::MainWindow(QScreen *screen, bool enableBlacklist, QWidget *parent)
 void MainWindow::resizeMainPanelWindow()
 {
     m_settings->calculateWindowConfig();
+    if (m_isWayland) {
+        setFixedHeight(m_settings->m_mainWindowSize.height());
+        m_mainPanel->setFixedSize(size());
+        updateLayerShellExclusiveZone();
+        return;
+    }
     m_mainPanel->setFixedSize(m_settings->m_mainWindowSize);
     std::cout << "+++++++++ " << m_settings->m_frontendRect.topLeft().x() << std::endl;
     this->adjustPosition();
@@ -100,7 +120,7 @@ void MainWindow::resizeMainPanelWindow()
 }
 
 MainWindow::~MainWindow() {
-    delete m_xcbMisc;
+    // m_xcbMisc 是全局单例，多屏下会被所有顶栏共享，不能在这里释放
 }
 
 const QPoint rawXPosition(const QPoint &scaledPos)
@@ -113,13 +133,55 @@ const QPoint rawXPosition(const QPoint &scaledPos)
                   : scaledPos;
 }
 
-void MainWindow::clearStrutPartial()
-{
+void MainWindow::initLayerShell(QScreen* screen) {
+    winId();
+    QWindow* win = windowHandle();
+    if (!win) {
+        qWarning() << "(Wayland) Init: Failed to get window handles!!";
+        return;
+    }
+
+    if (screen) {
+        win->setScreen(screen);
+    }
+
+    m_layerShell = LayerShellQt::Window::get(win);
+    m_layerShell->setScope(QStringLiteral("dock"));
+    m_layerShell->setLayer(LayerShellQt::Window::LayerTop);
+    m_layerShell->setAnchors(LayerShellQt::Window::Anchors(
+        LayerShellQt::Window::AnchorTop
+        | LayerShellQt::Window::AnchorLeft
+        | LayerShellQt::Window::AnchorRight));
+    m_layerShell->setKeyboardInteractivity(
+        LayerShellQt::Window::KeyboardInteractivityNone);
+    m_layerShell->setScreenConfiguration(
+        LayerShellQt::Window::ScreenFromQWindow);
+    m_layerShell->setCloseOnDismissed(false);
+    updateLayerShellExclusiveZone();
+}
+
+void MainWindow::updateLayerShellExclusiveZone() {
+    if (!m_layerShell) {
+        return;
+    }
+
+    m_layerShell->setExclusiveZone(height() + m_settings->dockMargin());
+}
+
+void MainWindow::clearStrutPartial() {
+    if (m_isWayland)
+        return;
+
     m_xcbMisc->clear_strut_partial(winId());
 }
 
-void MainWindow::setStrutPartial()
-{
+void MainWindow::setStrutPartial() {
+    // Exclusize zone handles it under wayland
+    if (m_isWayland) {
+        updateLayerShellExclusiveZone();
+        return;
+    }
+
     // first, clear old strut partial
     clearStrutPartial();
 
@@ -242,6 +304,15 @@ void MainWindow::loadPlugins() {
 
 void MainWindow::moveToScreen(QScreen *screen) {
     m_settings->moveToScreen(screen);
+
+    if (m_isWayland) {
+        if (QWindow *win = windowHandle()) {
+            win->setScreen(screen);
+        }
+        updateLayerShellExclusiveZone();
+        return;
+    }
+
     this->resize(m_settings->m_mainWindowSize);
     m_mainPanel->resize(m_settings->m_mainWindowSize);
     m_mainPanel->adjustSize();
@@ -251,6 +322,10 @@ void MainWindow::moveToScreen(QScreen *screen) {
 }
 
 void MainWindow::setRaidus(int radius) {
+    if (m_isWayland) {
+        return;
+    }
+
     m_platformWindowHandle.setWindowRadius(radius);  // have no idea why it doesn't work :(
 }
 
@@ -290,85 +365,144 @@ void MainWindow::applyCustomSettings(const CustomSettings &customSettings) {
 }
 
 void MainWindow::adjustPosition() {
+    // Under wayland, windows are NOT able to move themselves, the ositioning
+    // is handled by layer-shell.
+    if (m_isWayland) {
+        return;
+    }
+
     std::cout << "++++++++++ " << m_settings->m_frontendRect.topLeft().x() << std::endl;
     this->move(m_settings->m_frontendRect.topLeft() / m_settings->m_screen->devicePixelRatio());
 }
 
+void MainWindow::resizeEvent(QResizeEvent* e) {
+    DBlurEffectWidget::resizeEvent(e);
+
+    if (m_isWayland) {
+        m_mainPanel->setFixedSize(size());
+        updateLayerShellExclusiveZone();
+    }
+}
+
 TopPanelLauncher::TopPanelLauncher()
-    : m_display(new DBusDisplay(this))
-{
+        : m_display(new DBusDisplay(this))
+        , m_rearrangeTimer(new QTimer(this))
+        , m_isWayland(Utils::isWayland()) {
     this->m_settingWidget = new MainSettingWidget();
-    connect(m_display, &DBusDisplay::MonitorsChanged, this, &TopPanelLauncher::monitorsChanged);
-//    connect(m_display, &DBusDisplay::PrimaryChanged, this, &TopPanelLauncher::primaryChanged);
+
+    m_rearrangeTimer->setSingleShot(true);
+    m_rearrangeTimer->setInterval(100);
+    connect(m_rearrangeTimer, &QTimer::timeout, this,
+        &TopPanelLauncher::rearrange);
+
+    // Seems that Wayland lacks deepin-daemon's Display service.
+    // We relys on Qt's screen signals instead.
+    // For X11 we use both depending who arrives first.
+    // TODO(CharOfString): update this once gxde-daemon has display service.
+    connect(qApp, &QGuiApplication::screenAdded, this,
+        &TopPanelLauncher::monitorsChanged);
+    connect(qApp, &QGuiApplication::screenRemoved, this,
+        &TopPanelLauncher::onScreenRemoved);
+    connect(qApp, &QGuiApplication::primaryScreenChanged, this,
+        &TopPanelLauncher::monitorsChanged);
+    if (!m_isWayland) {
+        connect(m_display, &DBusDisplay::MonitorsChanged, this,
+            &TopPanelLauncher::monitorsChanged);
+    }
+
     this->rearrange();
 }
 
 void TopPanelLauncher::monitorsChanged() {
-    rearrange();
+    m_rearrangeTimer->start();
+}
+
+void TopPanelLauncher::onScreenRemoved(QScreen *screen) {
+    if (MainWindow *mw = mwMap.take(screen)) {
+        qDebug() << "(Panel) Screen: Panel closed due to closed QScreen"
+            << screen->name();
+        mw->close();
+        mw->deleteLater();
+    }
+
+    if (primaryScreen == screen) {
+        primaryScreen = nullptr;
+    }
+    m_rearrangeTimer->start();
+}
+
+MainWindow* TopPanelLauncher::createPanel(QScreen* screen) {
+    MainWindow* mw = new MainWindow(screen, screen != qApp->primaryScreen());
+    connect(mw, &MainWindow::settingActionClicked, this, [this, mw]() {
+        QScreen* screen = mw->screen();
+        if (screen) {
+            this->m_settingWidget->move(screen->geometry().topLeft());
+        }
+        this->m_settingWidget->show();
+    });
+    return mw;
 }
 
 void TopPanelLauncher::rearrange() {
     this->primaryChanged();
 
+    // Under Wayland + dual screen + screen copy mode, each screen copy needs
+    // an individual bar.
     bool ifCopyScreenMode = false;
-    for (auto p_screen : qApp->screens()) {
-        if (p_screen != qApp->primaryScreen() && p_screen->geometry() == qApp->primaryScreen()->geometry()) {
-            ifCopyScreenMode = true;
-            break;
+    if (!m_isWayland) {
+        for (auto p_screen : qApp->screens()) {
+            if (p_screen != qApp->primaryScreen() && p_screen->geometry() == qApp->primaryScreen()->geometry()) {
+                ifCopyScreenMode = true;
+                break;
+            }
         }
     }
     std::cout << "==============> ifCopyMode:" << ifCopyScreenMode << std::endl;
-    if (!ifCopyScreenMode) {
-        for (auto p_screen : qApp->screens()) {
-            if (mwMap.contains(p_screen)) {
-                // adjust size
-                std::cout << "========> Panel exists, resizing..." << std::endl;
-                mwMap[p_screen]->hide();
-                mwMap[p_screen]->moveToScreen(p_screen);
-                mwMap[p_screen]->show();
-                mwMap[p_screen]->setRaidus(0);
-                continue;
+
+    const QList<QScreen *> targetScreens = ifCopyScreenMode
+            ? QList<QScreen *>{ qApp->primaryScreen() }
+            : qApp->screens();
+
+    for (auto p_screen : targetScreens) {
+        if (!p_screen)
+            continue;
+
+        if (mwMap.contains(p_screen)) {
+            // adjust size
+            std::cout << "========> Panel exists, resizing..." << std::endl;
+            MainWindow *mw = mwMap[p_screen];
+            if (m_isWayland) {
+                mw->moveToScreen(p_screen);
+            } else {
+                mw->hide();
+                mw->moveToScreen(p_screen);
+                mw->show();
+                mw->setRaidus(0);
             }
-
-            std::cout << "===========> create top panel on" << p_screen->name().toStdString() << std::endl;
-            MainWindow *mw = new MainWindow(p_screen, p_screen != qApp->primaryScreen());
-            connect(mw, &MainWindow::settingActionClicked, this, [this, mw]() {
-                QScreen *screen = mw->screen();
-                if (screen) {
-                    this->m_settingWidget->move(screen->geometry().topLeft());
-                }
-                this->m_settingWidget->show();
-            });
-
-            QPoint t = p_screen->geometry().topLeft();
-            mw->move(t);
-            mw->adjustPosition();
-
-            if (p_screen == qApp->primaryScreen()) {
-                mw->loadPlugins();
-            }
-            mwMap.insert(p_screen, mw);
+            continue;
         }
-    } else {
-        QScreen *p_screen = qApp->primaryScreen();
-        MainWindow *mw = new MainWindow(p_screen, p_screen != qApp->primaryScreen());
-        connect(mw, &MainWindow::settingActionClicked, this, [this, mw]() {
-            QScreen *screen = mw->screen();
-            if (screen) {
-                this->m_settingWidget->move(screen->geometry().topLeft());
-            }
-            this->m_settingWidget->show();
-        });
-        mw->loadPlugins();
+
+        MainWindow *mw = createPanel(p_screen);
+        if (!m_isWayland) {
+            mw->move(p_screen->geometry().topLeft());
+            mw->adjustPosition();
+        }
+
+        if (p_screen == qApp->primaryScreen()) {
+            mw->loadPlugins();
+        }
         mwMap.insert(p_screen, mw);
     }
 
     for (auto screen : mwMap.keys()) {
-        if (!qApp->screens().contains(screen)) {
-            mwMap[screen]->close();
-            qDebug() << "===========> close top panel";
-            mwMap.remove(screen);
-        }
+        if (targetScreens.contains(screen))
+            continue;
+
+        MainWindow *mw = mwMap.take(screen);
+        qDebug() << "(Panel) Screen: Closing panel due to closed QScreen"
+            << screen->name();
+        mw->close();
+        mw->deleteLater();
     }
 }
 

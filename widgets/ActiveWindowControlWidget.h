@@ -21,11 +21,12 @@
 #include "../frame/util/CustomSettings.h"
 #include <com_deepin_dde_launcher.h>
 #include "QOperationWidget.h"
+#include "dockinterface.h"
 
 
 using LauncherInter = com::deepin::dde::Launcher;
 
-using DBusDock = com::deepin::dde::daemon::Dock;
+using DBusDock = DockInterface;
 using DBusWM = com::deepin::wm;
 
 class ActiveWindowControlWidget : public QWidget {

@@ -23,7 +23,8 @@ set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
 # 设置依赖
 set(CPACK_DEBIAN_PACKAGE_DEPENDS
         "qt6-base-dev, libxcb-ewmh2, libxcb1, libdframeworkdbus2,
-         libdtk6core-bin, libkf6windowsystem6, qt6-svg-dev, libgsettings-qt1, libxcb-util1")
+         libdtk6core-bin, libkf6windowsystem6, qt6-svg-dev, libgsettings-qt1, libxcb-util1,
+         liblayershellqtinterface6, qt6-wayland")
 
 # 设置section
 set(CPACK_DEBIAN_PACKAGE_SECTION "utils")

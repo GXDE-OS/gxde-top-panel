@@ -30,6 +30,10 @@
 namespace Utils {
 
 #define ICBC_CONF_FILE "/etc/deepin/icbc.conf"
+    inline bool isWayland() {
+        static const bool wayland = QGuiApplication::platformName().startsWith(QLatin1String("wayland"));
+        return wayland;
+    }
 
 /**
  * @brief SettingsPtr 根据给定信息返回一个QGSettings指针
