@@ -74,11 +74,6 @@ void AbstractPluginsController::saveValue(PluginsItemInterface *const itemInter,
     QJsonObject localObject = m_pluginSettingsObject.value(itemInter->pluginName()).toObject();
     localObject.insert(key, QJsonValue::fromVariant(value)); //Note: QVariant::toJsonValue() not work in Qt 5.7
 
-    // save to daemon
-    QJsonObject remoteObject, remoteObjectInter;
-    remoteObjectInter.insert(key, QJsonValue::fromVariant(value)); //Note: QVariant::toJsonValue() not work in Qt 5.7
-    remoteObject.insert(itemInter->pluginName(), remoteObjectInter);
-
     if (itemInter->type() == PluginsItemInterface::Fixed && key == "enable" && !value.toBool()) {
         int fixedPluginCount = 0;
         // 遍历FixPlugin插件个数
@@ -91,13 +86,16 @@ void AbstractPluginsController::saveValue(PluginsItemInterface *const itemInter,
         // 修改插件的order值，位置为队尾
         QString name = localObject.keys().last();
         localObject.insert(name, QJsonValue::fromVariant(fixedPluginCount)); //Note: QVariant::toJsonValue() not work in Qt 5.7
-
-        // daemon中同样修改
-        remoteObjectInter.insert(name, QJsonValue::fromVariant(fixedPluginCount)); //Note: QVariant::toJsonValue() not work in Qt 5.7
-        remoteObject.insert(itemInter->pluginName(), remoteObjectInter);
     }
 
     m_pluginSettingsObject.insert(itemInter->pluginName(), localObject);
+
+    // 发送该插件的完整设置对象，而不是只发被改动的那一个键。
+    // gxde-dock-daemon 的 MergePluginSettings 只在顶层做替换，不像 deepin
+    // 那样深合并；只发增量会导致同一插件下的其它键（如 enable）被整个抹掉，
+    // 进而触发插件反复重建。发完整对象对两种 daemon 语义都正确。
+    QJsonObject remoteObject;
+    remoteObject.insert(itemInter->pluginName(), localObject);
     m_dockDaemonInter->MergePluginSettings(QJsonDocument(remoteObject).toJson(QJsonDocument::JsonFormat::Compact));
 }
 
@@ -334,16 +332,11 @@ void AbstractPluginsController::refreshPluginSettings()
         return;
     }
 
-    for (auto pluginsIt = pluginSettingsObject.constBegin(); pluginsIt != pluginSettingsObject.constEnd(); ++pluginsIt) {
-        const QString &pluginName = pluginsIt.key();
-        const QJsonObject &settingsObject = pluginsIt.value().toObject();
-        QJsonObject newSettingsObject = m_pluginSettingsObject.value(pluginName).toObject();
-        for (auto settingsIt = settingsObject.constBegin(); settingsIt != settingsObject.constEnd(); ++settingsIt) {
-            newSettingsObject.insert(settingsIt.key(), settingsIt.value());
-        }
-        // TODO: remove not exists key-values
-        m_pluginSettingsObject.insert(pluginName, newSettingsObject);
-    }
+    // daemon 是插件设置的唯一真相源，这里必须精确镜像它的状态。
+    // 原先的写法只做增量合并、从不删除已消失的键，导致本地缓存永远比 daemon
+    // 多出一些陈旧键，上面那个「相等就提前返回」的守卫因此永远不生效，
+    // 于是每收到一次 PluginSettingsSynced 都会把所有插件项全量拆建一遍。
+    m_pluginSettingsObject = pluginSettingsObject;
 
     // not notify plugins to refresh settings if this update is not emit by dock daemon
     if (sender() != m_dockDaemonInter) {

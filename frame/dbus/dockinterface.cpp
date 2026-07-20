@@ -34,11 +34,7 @@ const char* const DDE_DOCK_SERVICE = "com.deepin.dde.daemon.Dock";
 const char* const DDE_DOCK_PATH = "/com/deepin/dde/daemon/Dock";
 const char* const DDE_DOCK_INTERFACE = "com.deepin.dde.daemon.Dock";
 
-/**
- * @brief 暂时关闭新 daemon（top.gxde.daemon.dock）支持，疑似该后端有问题。
- * @note 恢复支持时把它改回 true 即可，下面的探测逻辑原样保留。
- */
-constexpr bool ENABLE_GXDE_DOCK_BACKEND = false;
+constexpr bool ENABLE_GXDE_DOCK_BACKEND = true;
 
 /**
  * @brief Checks if top.gxde.daemon.dock is available on the session bus...

@@ -4,7 +4,7 @@
 <context>
     <name>AbstractPluginsController</name>
     <message>
-        <location filename="../frame/util/abstractpluginscontroller.cpp" line="234"/>
+        <location filename="../frame/util/abstractpluginscontroller.cpp" line="232"/>
         <source>The plugin %1 is not compatible with the system.</source>
         <translation>插件 %1 与系统不兼容</translation>
     </message>
