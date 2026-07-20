@@ -35,6 +35,12 @@ const char* const DDE_DOCK_PATH = "/com/deepin/dde/daemon/Dock";
 const char* const DDE_DOCK_INTERFACE = "com.deepin.dde.daemon.Dock";
 
 /**
+ * @brief 暂时关闭新 daemon（top.gxde.daemon.dock）支持，疑似该后端有问题。
+ * @note 恢复支持时把它改回 true 即可，下面的探测逻辑原样保留。
+ */
+constexpr bool ENABLE_GXDE_DOCK_BACKEND = false;
+
+/**
  * @brief Checks if top.gxde.daemon.dock is available on the session bus...
  * @param (none)
  * @note The whole thing is wrapped in a static function so the result is
@@ -42,6 +48,10 @@ const char* const DDE_DOCK_INTERFACE = "com.deepin.dde.daemon.Dock";
  * @return (bool) Whether top.gxde.daemon.dock is available.
  */
 bool isNeoDockServiceReachable() {
+    if (!ENABLE_GXDE_DOCK_BACKEND) {
+        return false;
+    }
+
     static const bool available = [] {
         QDBusConnectionInterface* bus = QDBusConnection::sessionBus()
             .interface();
