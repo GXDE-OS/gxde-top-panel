@@ -1,4 +1,4 @@
-gxde-top-panel (1.0.4) UNRELEASED; urgency=medium
+gxde-top-panel (1.0.5) UNRELEASED; urgency=medium
 
   * Initial release. (Closes: #nnnn)  <nnnn is the bug number of your ITP>
   * 依赖修改为 libgxframeworkdbus2
@@ -12,5 +12,6 @@ gxde-top-panel (1.0.4) UNRELEASED; urgency=medium
   * 修复插件被拖动时会段错误崩溃的问题
   * Wayland 下使用 XWayland 运行
   * 修复 XWayland 下读取异常接口导致程序阻塞过久无法正常使用的问题
+  * 初步增加Wayland原生支持&双屏幕支持
 
- -- gfdgd_xi <3025613752@qq.com>  Sat, 18 Jul 2026 12:44:26 +0800
+ -- gfdgd_xi <3025613752@qq.com>  Tue, 21 Jul 2026 16:48:33 +0800
