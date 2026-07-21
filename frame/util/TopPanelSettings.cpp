@@ -7,9 +7,58 @@
 #include <QApplication>
 #include <QScreen>
 #include <QAction>
+#include <QWindow>
 #include <DApplication>
 #include <iostream>
+#include <LayerShellQt/Window>
 #include "CustomSettings.h"
+
+namespace {
+
+// Workaround for QMenu (right click menu) under wayland.
+void configureMenuAsLayerSurface(QWidget* menu, QScreen* screen,
+        const QPoint& pos) {
+    if (!menu) {
+        return;
+    }
+
+    menu->winId();
+    QWindow *win = menu->windowHandle();
+    if (!win) {
+        qWarning() << "(Wayland) Menu: failed to get window handle";
+        return;
+    }
+
+    const bool wasCreated = win->handle() != nullptr;
+    const QString before = win->screen() ? win->screen()->name() : QStringLiteral("null");
+
+    if (screen) {
+        win->setScreen(screen);
+    }
+
+    qWarning() << "(Wayland) Menu:" << menu->metaObject()->className()
+               << "want=" << (screen ? screen->name() : QStringLiteral("null"))
+               << "before=" << before
+               << "after=" << (win->screen() ? win->screen()->name() : QStringLiteral("null"))
+               << "alreadyCreated=" << wasCreated
+               << "pos=" << pos;
+
+    LayerShellQt::Window *ls = LayerShellQt::Window::get(win);
+    ls->setScope(QStringLiteral("menu"));
+    ls->setLayer(LayerShellQt::Window::LayerOverlay);
+    // 不设这个的话默认是 ScreenFromCompositor，output 会传 NULL 交给合成器挑，
+    // 副屏上弹出的菜单会跑到主屏上去；上面的 setScreen() 只有配合它才生效
+    ls->setScreenConfiguration(LayerShellQt::Window::ScreenFromQWindow);
+    ls->setAnchors(LayerShellQt::Window::Anchors(
+        LayerShellQt::Window::AnchorTop | LayerShellQt::Window::AnchorLeft));
+    ls->setExclusiveZone(-1);
+    ls->setMargins(QMargins(pos.x(), pos.y(), 0, 0));
+    ls->setKeyboardInteractivity(
+        LayerShellQt::Window::KeyboardInteractivityOnDemand);
+    ls->setCloseOnDismissed(true);
+}
+
+}  // namespace
 
 #define WINDOW_MAX_SIZE          100
 
@@ -44,6 +93,17 @@ TopPanelSettings::TopPanelSettings(DockItemManager *itemManager, QScreen *screen
     QAction *hideSubMenuAct = new QAction(tr("Plugins"), this);
     hideSubMenuAct->setMenu(m_hideSubMenu);
 
+    // Also handle submenu for Wayland
+    connect(m_hideSubMenu, &QMenu::aboutToShow, this, [this, hideSubMenuAct]() {
+        if (!Utils::isWayland()) {
+            return;
+        }
+        const QRect actRect = m_settingsMenu.actionGeometry(hideSubMenuAct);
+        configureMenuAsLayerSurface(
+            m_hideSubMenu, m_screen,
+            m_menuLayerPos + QPoint(m_settingsMenu.width(), actRect.top()));
+    });
+
     m_settingsMenu.addAction(hideSubMenuAct);
     m_settingsMenu.setTitle("Settings Menu");
 
@@ -76,8 +136,15 @@ void TopPanelSettings::moveToScreen(QScreen *screen) {
     calculateWindowConfig();
 }
 
-void TopPanelSettings::showDockSettingsMenu()
+void TopPanelSettings::showDockSettingsMenu(const QPoint &panelPos)
 {
+    // exec() 会开嵌套事件循环，菜单还开着时再次右键会重入到这里。那样下面的
+    // qDeleteAll 会删掉正在显示的菜单项，并且对同一个 QMenu 重复 exec，直接崩。
+    if (m_menuShowing) {
+        return;
+    }
+    m_menuShowing = true;
+
     // create actions
     QList<QAction *> actions;
     for (auto *p : m_itemManager->pluginList()) {
@@ -110,7 +177,13 @@ void TopPanelSettings::showDockSettingsMenu()
     for (auto act : actions)
         m_hideSubMenu->addAction(act);
 
-    m_settingsMenu.exec(QCursor::pos());
+    if (Utils::isWayland()) {
+        m_menuLayerPos = QPoint(panelPos.x(), m_mainWindowSize.height());
+        configureMenuAsLayerSurface(&m_settingsMenu, m_screen, m_menuLayerPos);
+    }
+
+    m_settingsMenu.exec(Utils::isWayland() ? m_menuLayerPos : QCursor::pos());
+    m_menuShowing = false;
 }
 
 void TopPanelSettings::menuActionClicked(QAction *action)

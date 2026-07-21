@@ -38,8 +38,7 @@ public:
     const int dockMargin() const;
 
     const QRect primaryRect() const;
-
-    void showDockSettingsMenu();
+    void showDockSettingsMenu(const QPoint& panelPos = QPoint());
     void calculateWindowConfig();
     void applyCustomSettings(const CustomSettings& customSettings);
 
@@ -88,6 +87,10 @@ private:
     QRect m_primaryRawRect;
     QMenu m_settingsMenu;
     QMenu *m_hideSubMenu;
+    // Wayland 下菜单是自行摆放的 layer surface，子菜单要靠父菜单的位置推算
+    QPoint m_menuLayerPos;
+    // 防止菜单 exec() 的嵌套事件循环里再次右键导致重入
+    bool m_menuShowing = false;
     DockItemManager *m_itemManager;
     int m_screenRawHeight;
     int m_screenRawWidth;

@@ -304,17 +304,17 @@ p, li { white-space: pre-wrap; }
 <context>
     <name>TopPanelSettings</name>
     <message>
-        <location filename="../frame/util/TopPanelSettings.cpp" line="44"/>
+        <location filename="../frame/util/TopPanelSettings.cpp" line="93"/>
         <source>Plugins</source>
         <translation>插件</translation>
     </message>
     <message>
-        <location filename="../frame/util/TopPanelSettings.cpp" line="50"/>
+        <location filename="../frame/util/TopPanelSettings.cpp" line="110"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="../frame/util/TopPanelSettings.cpp" line="55"/>
+        <location filename="../frame/util/TopPanelSettings.cpp" line="115"/>
         <source>Restart</source>
         <translation>重启 Panel</translation>
     </message>
