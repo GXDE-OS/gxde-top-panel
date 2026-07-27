@@ -11,6 +11,7 @@
 #include <QScreen>
 #include <QTimer>
 #include <QWindow>
+#include <KWindowEffects>
 #include <LayerShellQt/Window>
 
 DGUI_USE_NAMESPACE
@@ -69,16 +70,24 @@ MainWindow::MainWindow(QScreen *screen, bool enableBlacklist, QWidget *parent)
     this->adjustPosition();
 
     setVisible(true);
+    m_platformWindowHandle.setTranslucentBackground(true);
+    m_platformWindowHandle.setEnableBlurWindow(true);
+    m_platformWindowHandle.setWindowRadius(0);
     if (!m_isWayland) {
-        // platformwindowhandle only works when the widget is visible...
-        m_platformWindowHandle.setEnableBlurWindow(true);
-        m_platformWindowHandle.setTranslucentBackground(true);
-        m_platformWindowHandle.setWindowRadius(0);  // have no idea why it doesn't work :(
         m_platformWindowHandle.setShadowOffset(QPoint(0, 5));
         m_platformWindowHandle.setShadowColor(QColor(0, 0, 0, 0.3 * 255));
         m_platformWindowHandle.setBorderWidth(1);
-    } else {
-        setBlurEnabled(true);
+    }
+
+    setBlendMode(DBlurEffectWidget::BehindWindowBlend);
+    setFull(true);
+    setBlurEnabled(true);
+
+    // KWin-compatible compositors expose blur through KWindowEffects instead
+    // of the Treeland personalization protocol.  Registering both is safe and
+    // keeps the panel blurred on either compositor implementation.
+    if (m_isWayland && windowHandle()) {
+        KWindowEffects::enableBlurBehind(windowHandle(), true);
     }
 
 
@@ -322,11 +331,7 @@ void MainWindow::moveToScreen(QScreen *screen) {
 }
 
 void MainWindow::setRaidus(int radius) {
-    if (m_isWayland) {
-        return;
-    }
-
-    m_platformWindowHandle.setWindowRadius(radius);  // have no idea why it doesn't work :(
+    m_platformWindowHandle.setWindowRadius(radius);
 }
 
 void MainWindow::adjustPanelSize() {

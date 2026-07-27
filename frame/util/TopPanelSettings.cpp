@@ -7,13 +7,78 @@
 #include <QApplication>
 #include <QScreen>
 #include <QAction>
+#include <QEvent>
+#include <QPainterPath>
+#include <QPalette>
+#include <QRegion>
 #include <QWindow>
 #include <DApplication>
+#include <DPlatformWindowHandle>
+#include <KWindowEffects>
 #include <iostream>
 #include <LayerShellQt/Window>
 #include "CustomSettings.h"
 
 namespace {
+
+constexpr int WaylandMenuRadius = 10;
+
+QRegion roundedMenuRegion(const QWidget *menu)
+{
+    if (!menu || menu->width() <= 0 || menu->height() <= 0) {
+        return {};
+    }
+
+    QPainterPath path;
+    path.addRoundedRect(QRectF(menu->rect()), WaylandMenuRadius,
+                        WaylandMenuRadius);
+    return QRegion(path.toFillPolygon().toPolygon());
+}
+
+void updateWaylandMenuEffects(QWidget *menu)
+{
+    if (!menu || !Utils::isWayland()) {
+        return;
+    }
+
+    menu->setAttribute(Qt::WA_TranslucentBackground);
+
+    const QColor background = menu->palette().color(QPalette::Window);
+    const QColor border = menu->palette().color(QPalette::Mid);
+    menu->setStyleSheet(QStringLiteral(
+        "QMenu { background-color: rgba(%1, %2, %3, 220); "
+        "border: 1px solid rgba(%4, %5, %6, 110); "
+        "border-radius: %7px; padding: 4px; }")
+        .arg(background.red()).arg(background.green()).arg(background.blue())
+        .arg(border.red()).arg(border.green()).arg(border.blue())
+        .arg(WaylandMenuRadius));
+
+    QWindow *win = menu->windowHandle();
+    if (!win) {
+        return;
+    }
+
+    constexpr auto HandleName = "wayland-menu-platform-handle";
+    auto *handle = menu->findChild<Dtk::Widget::DPlatformWindowHandle *>(
+        QString::fromLatin1(HandleName), Qt::FindDirectChildrenOnly);
+    if (!handle) {
+        handle = new Dtk::Widget::DPlatformWindowHandle(menu, menu);
+        handle->setObjectName(QString::fromLatin1(HandleName));
+    }
+    handle->setTranslucentBackground(true);
+    handle->setWindowRadius(WaylandMenuRadius);
+    handle->setEnableBlurWindow(true);
+
+    KWindowEffects::enableBlurBehind(win, true, roundedMenuRegion(menu));
+}
+
+void updateWaylandMenuBlurRegion(QWidget *menu)
+{
+    if (menu && menu->windowHandle()) {
+        KWindowEffects::enableBlurBehind(menu->windowHandle(), true,
+                                         roundedMenuRegion(menu));
+    }
+}
 
 // Workaround for QMenu (right click menu) under wayland.
 void configureMenuAsLayerSurface(QWidget* menu, QScreen* screen,
@@ -56,6 +121,8 @@ void configureMenuAsLayerSurface(QWidget* menu, QScreen* screen,
     ls->setKeyboardInteractivity(
         LayerShellQt::Window::KeyboardInteractivityOnDemand);
     ls->setCloseOnDismissed(true);
+
+    updateWaylandMenuEffects(menu);
 }
 
 }  // namespace
@@ -90,6 +157,10 @@ TopPanelSettings::TopPanelSettings(DockItemManager *itemManager, QScreen *screen
 
     m_hideSubMenu = new QMenu(&m_settingsMenu);
     m_hideSubMenu->setAccessibleName("pluginsmenu");
+    m_settingsMenu.installEventFilter(this);
+    m_hideSubMenu->installEventFilter(this);
+    m_settingsMenu.setAttribute(Qt::WA_TranslucentBackground);
+    m_hideSubMenu->setAttribute(Qt::WA_TranslucentBackground);
     QAction *hideSubMenuAct = new QAction(tr("Plugins"), this);
     hideSubMenuAct->setMenu(m_hideSubMenu);
 
@@ -198,6 +269,23 @@ void TopPanelSettings::menuActionClicked(QAction *action)
         if (p->pluginName() == data)
             return p->pluginStateSwitched();
     }
+}
+
+bool TopPanelSettings::eventFilter(QObject *watched, QEvent *event)
+{
+    if (Utils::isWayland()
+        && (watched == &m_settingsMenu || watched == m_hideSubMenu)) {
+        auto *menu = static_cast<QWidget *>(watched);
+        if (event->type() == QEvent::Show) {
+            updateWaylandMenuEffects(menu);
+        } else if (event->type() == QEvent::Resize) {
+            // Updating the stylesheet from inside Resize can itself trigger a
+            // relayout.  Only the compositor blur region depends on size.
+            updateWaylandMenuBlurRegion(menu);
+        }
+    }
+
+    return QObject::eventFilter(watched, event);
 }
 
 void TopPanelSettings::calculateWindowConfig()

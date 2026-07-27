@@ -55,6 +55,9 @@ signals:
 private slots:
     void menuActionClicked(QAction *action);
 
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override;
+
 private:
     /**
      * 用于获取当 DDE-Dock 在左右两侧时的实际宽度：Fashion Mode 下会有 10px 的上下间距，Efficient Mode 下则没有。
