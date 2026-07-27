@@ -45,8 +45,10 @@
 
 #include "dbusmenuimporter.h"
 
-static const QByteArray s_x11AppMenuServiceNamePropertyName = QByteArrayLiteral("_KDE_NET_WM_APPMENU_SERVICE_NAME");
-static const QByteArray s_x11AppMenuObjectPathPropertyName = QByteArrayLiteral("_KDE_NET_WM_APPMENU_OBJECT_PATH");
+static const QByteArray s_x11AppMenuServiceNamePropertyName =
+    QByteArrayLiteral("_KDE_NET_WM_APPMENU_SERVICE_NAME");
+static const QByteArray s_x11AppMenuObjectPathPropertyName =
+    QByteArrayLiteral("_KDE_NET_WM_APPMENU_OBJECT_PATH");
 
 #if HAVE_X11
 static QHash<QByteArray, xcb_atom_t> s_atoms;
@@ -72,6 +74,21 @@ AppMenuModel::AppMenuModel(QObject *parent)
     : QAbstractListModel(parent),
       m_serviceWatcher(new QDBusServiceWatcher(this))
 {
+    connect(this, &AppMenuModel::modelNeedsUpdate, this, [this] {
+        if (!m_updatePending) {
+            m_updatePending = true;
+            QMetaObject::invokeMethod(this, "update", Qt::QueuedConnection);
+        }
+    });
+
+    m_serviceWatcher->setConnection(QDBusConnection::sessionBus());
+    connect(m_serviceWatcher, &QDBusServiceWatcher::serviceUnregistered, this,
+            [this](const QString &serviceName) {
+        if (serviceName == m_serviceName) {
+            clearApplicationMenu();
+        }
+    });
+
     if (!KWindowSystem::isPlatformX11()) {
         return;
     }
@@ -90,29 +107,11 @@ AppMenuModel::AppMenuModel(QObject *parent)
             , this
             , &AppMenuModel::onWindowRemoved);
 
-    connect(this, &AppMenuModel::modelNeedsUpdate, this, [this] {
-        if (!m_updatePending)
-        {
-            m_updatePending = true;
-            QMetaObject::invokeMethod(this, "update", Qt::QueuedConnection);
-        }
-    });
-
     connect(this, &AppMenuModel::screenGeometryChanged, this, [this] {
         onWindowChanged(m_currentWindowId, {}, {});
     });
 
     onActiveWindowChanged(KX11Extras::activeWindow());
-
-    m_serviceWatcher->setConnection(QDBusConnection::sessionBus());
-    //if our current DBus connection gets lost, close the menu
-    //we'll select the new menu when the focus changes
-    connect(m_serviceWatcher, &QDBusServiceWatcher::serviceUnregistered, this, [this](const QString & serviceName) {
-        if (serviceName == m_serviceName) {
-            setMenuAvailable(false);
-            emit modelNeedsUpdate();
-        }
-    });
 
     connect(KX11Extras::self(), &KX11Extras::windowChanged,
             this, [this](WId id, NET::Properties properties, NET::Properties2 properties2) {
@@ -191,7 +190,9 @@ void AppMenuModel::setMenuAvailable(bool set)
 {
     if (m_menuAvailable != set) {
         m_menuAvailable = set;
-        onWindowChanged(m_currentWindowId, {}, {});
+        if (KWindowSystem::isPlatformX11()) {
+            onWindowChanged(m_currentWindowId, {}, {});
+        }
         emit menuAvailableChanged();
     }
 }
@@ -500,6 +501,10 @@ void AppMenuModel::updateApplicationMenu(const QString &serviceName, const QStri
         return;
     }
 
+    m_menu.clear();
+    setMenuAvailable(false);
+    emit modelNeedsUpdate();
+
     m_serviceName = serviceName;
     m_serviceWatcher->setWatchedServices(QStringList({m_serviceName}));
 
@@ -561,6 +566,24 @@ void AppMenuModel::updateApplicationMenu(const QString &serviceName, const QStri
     });
 }
 
+void AppMenuModel::clearApplicationMenu() {
+    if (m_serviceName.isEmpty() && m_menuObjectPath.isEmpty()
+        && !m_importer && !m_menuAvailable) {
+        return;
+    }
+
+    m_serviceWatcher->setWatchedServices({});
+    m_serviceName.clear();
+    m_menuObjectPath.clear();
+    m_menu.clear();
+    if (m_importer) {
+        m_importer->deleteLater();
+        m_importer.clear();
+    }
+    setMenuAvailable(false);
+    emit modelNeedsUpdate();
+}
+
 bool AppMenuModel::nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result)
 {
     Q_UNUSED(result);
@@ -596,4 +619,3 @@ bool AppMenuModel::nativeEventFilter(const QByteArray &eventType, void *message,
 
     return false;
 }
-

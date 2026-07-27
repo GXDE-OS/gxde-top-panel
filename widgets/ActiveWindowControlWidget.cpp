@@ -7,23 +7,35 @@
 #include <QWindow>
 #include "ActiveWindowControlWidget.h"
 #include "util/XUtils.h"
+#include "util/utils.h"
+#include "util/WaylandMenu.h"
+#include "wayland/WaylandWindowManager.h"
 #include <QMouseEvent>
 #include <NETWM>
 #include <QGuiApplication>
 #include <QApplication>
 #include <QScreen>
 #include <QEvent>
+#include <QFileInfo>
+#include <QIcon>
+#include <QLocale>
+#include <QRegularExpression>
+#include <QSettings>
+#include <QStandardPaths>
 #include <iostream>
 
 ActiveWindowControlWidget::ActiveWindowControlWidget(QWidget *parent)
     : QWidget(parent)
-    , m_appInter(new DBusDock(this))
+    , currActiveWinId(-1)
+    , m_isWayland(Utils::isWayland())
     , mouseClicked(false)
     , m_currentIndex(-1)
     , m_currentMenu(nullptr)
+    , m_appInter(new DBusDock(this))
+    , m_launcherInter(new LauncherInter("com.deepin.dde.Launcher", "/com/deepin/dde/Launcher", QDBusConnection::sessionBus(), this))
     , m_moreMenu(new QMenu())
     , organizeFlag(false)
-    , m_launcherInter(new LauncherInter("com.deepin.dde.Launcher", "/com/deepin/dde/Launcher", QDBusConnection::sessionBus(), this))
+    , prevAvailableWidth(-1)
 {
     m_launcherInter->setSync(true, false);
 
@@ -41,7 +53,6 @@ ActiveWindowControlWidget::ActiveWindowControlWidget(QWidget *parent)
     this->m_iconLabel->setScaledContents(true);
     this->m_layout->addWidget(this->m_iconLabel);
 
-    int buttonSize = 22;
     this->m_buttonWidget = new QOperationWidget(true, this);
     this->m_layout->addWidget(this->m_buttonWidget);
 
@@ -94,8 +105,14 @@ ActiveWindowControlWidget::ActiveWindowControlWidget(QWidget *parent)
         this->organizeMenu();
     });
 
-    // detect whether active window maximized signal
-    connect(KX11Extras::self(), &KX11Extras::windowChanged, this, &ActiveWindowControlWidget::windowChanged);
+    if (m_isWayland) {
+        connect(WaylandWindowManager::instance(), &WaylandWindowManager::activeWindowChanged,
+                this, &ActiveWindowControlWidget::activeWindowInfoChanged);
+    } else {
+        // detect whether active window maximized signal
+        connect(KX11Extras::self(), &KX11Extras::windowChanged,
+                this, &ActiveWindowControlWidget::windowChanged);
+    }
 
     this->m_fixTimer = new QTimer(this);
     this->m_fixTimer->setSingleShot(true);
@@ -112,6 +129,11 @@ ActiveWindowControlWidget::ActiveWindowControlWidget(QWidget *parent)
 }
 
 void ActiveWindowControlWidget::activeWindowInfoChanged() {
+    if (m_isWayland) {
+        updateWaylandWindowInfo();
+        return;
+    }
+
     int activeWinId = XUtils::getFocusWindowId();
     if (activeWinId < 0) {
         qDebug() << "Failed to get active window id !";
@@ -224,7 +246,7 @@ void ActiveWindowControlWidget::setButtonsVisible(bool visible) {
 
 void ActiveWindowControlWidget::enterEvent(QEnterEvent *event) {
     if (CustomSettings::instance()->isShowGlobalMenuOnHover() && !this->buttonLabelList.isEmpty()
-        && XUtils::checkIfWinMaximum(this->currActiveWinId)) {
+        && isActiveWindowMaximized()) {
         this->setMenuVisible(true);
     }
 
@@ -237,6 +259,11 @@ void ActiveWindowControlWidget::leaveEvent(QEvent *event) {
 }
 
 void ActiveWindowControlWidget::maxButtonClicked() {
+    if (m_isWayland) {
+        WaylandWindowManager::instance()->toggleMaximized();
+        return;
+    }
+
     if (XUtils::checkIfWinMaximum(this->currActiveWinId)) {
         XUtils::unmaximizeWindow(this->currActiveWinId);
 
@@ -254,10 +281,18 @@ void ActiveWindowControlWidget::maxButtonClicked() {
 }
 
 void ActiveWindowControlWidget::minButtonClicked() {
+    if (m_isWayland) {
+        WaylandWindowManager::instance()->minimize();
+        return;
+    }
     KX11Extras::minimizeWindow(this->currActiveWinId);
 }
 
 void ActiveWindowControlWidget::closeButtonClicked() {
+    if (m_isWayland) {
+        WaylandWindowManager::instance()->close();
+        return;
+    }
     this->m_appInter->CloseWindow(this->currActiveWinId);
 }
 
@@ -359,11 +394,26 @@ void ActiveWindowControlWidget::trigger(QClickableLabel *ctx, int idx) {
 
     qDebug() << "ActiveWindowControlWidget#trigger() is running..";
     if (actionMenu) {
-        actionMenu->adjustSize();
-        actionMenu->winId();//create window handle
-        actionMenu->windowHandle()->setTransientParent(ctx->windowHandle());
-        actionMenu->popup(this->m_menuWidget->mapToGlobal(ctx->geometry().bottomLeft()) + QPoint(0, 1));
         actionMenu->installEventFilter(this);
+        WaylandMenu::installStyle(actionMenu);
+        const QPoint popupPosition =
+            m_menuWidget->mapToGlobal(ctx->geometry().bottomLeft()) + QPoint(0, 1);
+        if (m_isWayland) {
+            QScreen *targetScreen = screen();
+            if (!targetScreen) {
+                targetScreen = QGuiApplication::screenAt(popupPosition);
+            }
+            const QPoint layerPosition = targetScreen
+                ? popupPosition - targetScreen->geometry().topLeft()
+                : popupPosition;
+            WaylandMenu::configure(actionMenu, targetScreen, layerPosition);
+            WaylandMenu::configureSubmenus(actionMenu, targetScreen);
+        } else {
+            actionMenu->adjustSize();
+            actionMenu->winId(); // create window handle
+            actionMenu->windowHandle()->setTransientParent(ctx->windowHandle());
+        }
+        actionMenu->popup(popupPosition);
 
         QMenu *oldMenu = m_currentMenu;
         m_currentMenu = actionMenu;
@@ -388,6 +438,9 @@ void ActiveWindowControlWidget::trigger(QClickableLabel *ctx, int idx) {
 }
 
 void ActiveWindowControlWidget::windowChanged(WId id, NET::Properties properties, NET::Properties2 properties2) {
+    if (m_isWayland) {
+        return;
+    }
     if (properties.testFlag(NET::WMGeometry) || properties.testFlag(NET::WMName)) {
         this->activeWindowInfoChanged();
     }
@@ -412,7 +465,11 @@ void ActiveWindowControlWidget::mousePressEvent(QMouseEvent *event) {
                 this->m_launcherInter->Show();
             }
         }
-        KX11Extras::activateWindow(this->currActiveWinId);
+        if (m_isWayland) {
+            WaylandWindowManager::instance()->activate();
+        } else {
+            KX11Extras::activateWindow(this->currActiveWinId);
+        }
     }
     QWidget::mousePressEvent(event);
 }
@@ -424,7 +481,13 @@ void ActiveWindowControlWidget::mouseReleaseEvent(QMouseEvent *event) {
 
 void ActiveWindowControlWidget::mouseMoveEvent(QMouseEvent *event) {
     if (this->mouseClicked && CustomSettings::instance()->isAllowDragWindowWhenMax()) {
-        if (XUtils::checkIfWinMaximum(this->currActiveWinId)) {
+        if (isActiveWindowMaximized()) {
+            if (m_isWayland) {
+                WaylandWindowManager::instance()->requestMove();
+                this->mouseClicked = false;
+                QWidget::mouseMoveEvent(event);
+                return;
+            }
             auto x11App = qApp->nativeInterface<QNativeInterface::QX11Application>();
             if (x11App) {
                 NETRootInfo ri(x11App->connection(), NET::WMMoveResize);
@@ -480,6 +543,12 @@ void ActiveWindowControlWidget::applyCustomSettings(const CustomSettings& settin
 bool ActiveWindowControlWidget::eventFilter(QObject *watched, QEvent *event) {
     auto *menu = qobject_cast<QMenu *>(watched);
     if (menu) {
+        if (m_isWayland && event->type() == QEvent::Show) {
+            WaylandMenu::updateEffects(menu);
+        } else if (m_isWayland && event->type() == QEvent::Resize) {
+            WaylandMenu::updateBlurRegion(menu);
+        }
+
         if (event->type() == QEvent::MouseMove) {
             auto *e = dynamic_cast<QMouseEvent *>(event);
 
@@ -520,7 +589,7 @@ bool ActiveWindowControlWidget::eventFilter(QObject *watched, QEvent *event) {
 
 void ActiveWindowControlWidget::leaveTopPanel() {
     if (!this->isMenuShown() && CustomSettings::instance()->isShowGlobalMenuOnHover() && !this->buttonLabelList.isEmpty()
-        && XUtils::checkIfWinMaximum(this->currActiveWinId)) {
+        && isActiveWindowMaximized()) {
         this->setMenuVisible(false);
     }
 }
@@ -664,7 +733,7 @@ void ActiveWindowControlWidget::organizeMenu() {
     }
 
     // menu visible
-    if (CustomSettings::instance()->isShowGlobalMenuOnHover() && XUtils::checkIfWinMaximum(this->currActiveWinId) && !this->isMenuShown()) {
+    if (CustomSettings::instance()->isShowGlobalMenuOnHover() && isActiveWindowMaximized() && !this->isMenuShown()) {
         if (!this->buttonLabelListBak.isEmpty()) {
             this->setMenuVisible(false);
         }
@@ -693,4 +762,96 @@ int ActiveWindowControlWidget::menuAvailableWidth() {
     }
     int availableWidth = this->width() - usedWidth - this->m_layout->spacing();
     return availableWidth;
+}
+
+bool ActiveWindowControlWidget::isActiveWindowMaximized() const
+{
+    if (m_isWayland) {
+        return WaylandWindowManager::instance()->activeWindow().maximized;
+    }
+    return XUtils::checkIfWinMaximum(this->currActiveWinId);
+}
+
+void ActiveWindowControlWidget::updateWaylandWindowInfo()
+{
+    const WaylandWindowManager::WindowInfo info =
+        WaylandWindowManager::instance()->activeWindow();
+
+    bool belongsToThisScreen = info.valid;
+    if (belongsToThisScreen && screen() && !info.geometry.isNull()) {
+        belongsToThisScreen = screen()->geometry().intersects(info.geometry);
+    }
+
+    if (!belongsToThisScreen) {
+        currActiveWinId = -1;
+        currActiveWinTitle = tr("Desktop");
+        setButtonsVisible(false);
+        m_winTitleLabel->setText(currActiveWinTitle);
+        m_appNameLabel->setText(tr("Desktop"));
+        if (!CustomSettings::instance()->isShowAppNameInsteadIcon()) {
+            m_iconLabel->setPixmap(
+                QPixmap(CustomSettings::instance()->getActiveDefaultAppIconPath()));
+        }
+        m_appMenuModel->clearApplicationMenu();
+        setMenuVisible(false);
+        return;
+    }
+
+    currActiveWinTitle = info.title;
+    m_winTitleLabel->setText(currActiveWinTitle);
+    m_appNameLabel->setText(waylandApplicationName(info.appId, info.title));
+    setButtonsVisible(info.maximized);
+
+    if (!CustomSettings::instance()->isShowAppNameInsteadIcon()) {
+        QIcon icon = QIcon::fromTheme(info.iconName);
+        if (icon.isNull()) {
+            icon = QIcon::fromTheme(QFileInfo(info.appId).completeBaseName());
+        }
+        if (icon.isNull()) {
+            m_iconLabel->setPixmap(
+                QPixmap(CustomSettings::instance()->getActiveDefaultAppIconPath()));
+        } else {
+            m_iconLabel->setPixmap(icon.pixmap(m_iconLabel->size()));
+        }
+    }
+
+    if (!info.menuService.isEmpty() && !info.menuObjectPath.isEmpty()) {
+        m_appMenuModel->updateApplicationMenu(info.menuService, info.menuObjectPath);
+    } else {
+        m_appMenuModel->clearApplicationMenu();
+    }
+}
+
+QString ActiveWindowControlWidget::waylandApplicationName(const QString &appId,
+                                                          const QString &title) const
+{
+    QString desktopId = QFileInfo(appId).fileName();
+    if (!desktopId.endsWith(QLatin1String(".desktop"), Qt::CaseInsensitive)) {
+        desktopId += QStringLiteral(".desktop");
+    }
+
+    const QString desktopFile =
+        QStandardPaths::locate(QStandardPaths::ApplicationsLocation, desktopId);
+    if (!desktopFile.isEmpty()) {
+        QSettings desktopEntry(desktopFile, QSettings::IniFormat);
+        const QString localizedKey = QStringLiteral("Desktop Entry/Name[%1]")
+                                         .arg(QLocale().name());
+        QString name = desktopEntry.value(localizedKey).toString();
+        if (name.isEmpty()) {
+            name = desktopEntry.value(QStringLiteral("Desktop Entry/Name")).toString();
+        }
+        if (!name.isEmpty()) {
+            return name;
+        }
+    }
+
+    if (!appId.isEmpty()) {
+        QString name = QFileInfo(appId).completeBaseName();
+        if (!name.isEmpty()) {
+            return name;
+        }
+    }
+
+    const QStringList titleParts = title.split(QRegularExpression(QStringLiteral("[–—-]")));
+    return titleParts.isEmpty() ? title : titleParts.constLast().trimmed();
 }

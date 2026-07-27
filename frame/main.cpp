@@ -23,12 +23,27 @@ int main(int argc, char *argv[]) {
     // 修复无限崩溃被拉回
     qDBusRegisterMetaType<QMap<QString, QString>>();
 
+    bool settingsMode = false;
+    for (int i = 1; i < argc; ++i) {
+        if (qstrcmp(argv[i], "--settings") == 0) {
+            settingsMode = true;
+            break;
+        }
+    }
+
     // If a single Wayland display is detected, then it IS wayland.
     // Under wayland, we enforce QT_QPA_PLATFORM to be wayland, otherwise
     // laytershell will MALFUNCTION!!
     if (!qgetenv("WAYLAND_DISPLAY").isEmpty()) {
         qputenv("QT_QPA_PLATFORM", "wayland");
-        LayerShellQt::Shell::useLayerShell();
+        // LayerShellQt replaces the shell integration for every top-level
+        // window in this process.
+        // Make a exception for settings page...
+        if (settingsMode) {
+            qunsetenv("QT_WAYLAND_SHELL_INTEGRATION");
+        } else {
+            LayerShellQt::Shell::useLayerShell();
+        }
     } else {
         // Otherwise DXCB is good to go.
         qputenv("QT_QPA_PLATFORM", "xcb");
@@ -50,11 +65,29 @@ int main(int argc, char *argv[]) {
 
 //    MainWindow mw(qApp->primaryScreen());
 //    mw.loadPlugins();
-    if (!app.setSingleInstance(QString("gxde-top-panel_%1").arg(getuid()))) {
-        qDebug() << "set single instance failed!!!!";
-        return -1;
+    QByteArray displayName = qgetenv("WAYLAND_DISPLAY");
+    if (displayName.isEmpty()) {
+        displayName = qgetenv("DISPLAY");
+    }
+    const QString instanceKey = QStringLiteral("gxde-top-panel%1_%2_%3")
+                                    .arg(settingsMode ? QStringLiteral("-settings") : QString())
+                                    .arg(getuid())
+                                    .arg(QString::fromLatin1(displayName.toHex()));
+    if (!app.setSingleInstance(instanceKey)) {
+        return 0;
     }
 
+    if (settingsMode) {
+        MainSettingWidget settingsWidget;
+        QObject::connect(&app, &DApplication::newInstanceStarted,
+                         &settingsWidget, [&settingsWidget] {
+            settingsWidget.show();
+            settingsWidget.raise();
+            settingsWidget.activateWindow();
+        });
+        settingsWidget.show();
+        return app.exec();
+    }
 
     TopPanelLauncher launcher;
 

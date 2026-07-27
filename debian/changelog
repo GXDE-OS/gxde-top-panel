@@ -1,3 +1,14 @@
+gxde-top-panel (1.0.5-gxde1) UNRELEASED; urgency=medium
+
+  * 改进双屏支持: 在Wayland上会为每个屏幕单独绘制一根顶栏; X11下修复在不同分辨率与DPI的两块屏幕下顶栏重叠的问题
+  * 新增原生Wayland支持
+  * 修复在Wayland下由于点击右键引发的段错误
+  * 切换Dock Daemon至GXDE新Daemon
+  * 修复在Wayland下无法获取原生Wayland位于屏幕顶端的程序/窗口名称与图标的问题
+  * 修复在Wayland下频繁崩溃的问题
+
+ -- CharOfString <root@charofstring.cc>  Mon, 27 Jul 2026 19:23:54 +0800
+
 gxde-top-panel (1.0.5) UNRELEASED; urgency=medium
 
   * Initial release. (Closes: #nnnn)  <nnnn is the bug number of your ITP>

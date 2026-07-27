@@ -67,6 +67,9 @@ private:
     void setMenuVisible(bool visible);
     void leaveTopPanel();
     int menuAvailableWidth();
+    bool isActiveWindowMaximized() const;
+    void updateWaylandWindowInfo();
+    QString waylandApplicationName(const QString &appId, const QString &title) const;
 
 private slots:
     void updateMenu();
@@ -84,6 +87,7 @@ private:
     QStack<int> activeIdStack;
     int currActiveWinId;
     QString currActiveWinTitle;
+    bool m_isWayland;
 
     QOperationWidget *m_buttonWidget;
 

@@ -67,6 +67,7 @@ public:
     QHash<int, QByteArray> roleNames() const override;
 
     void updateApplicationMenu(const QString &serviceName, const QString &menuObjectPath);
+    void clearApplicationMenu();
 
     bool filterByActive() const;
     void setFilterByActive(bool active);
@@ -115,7 +116,7 @@ signals:
 private:
     bool m_filterByActive = false;
     bool m_filterChildren = false;
-    bool m_menuAvailable;
+    bool m_menuAvailable = false;
     bool m_updatePending = false;
     bool m_visible = true;
 

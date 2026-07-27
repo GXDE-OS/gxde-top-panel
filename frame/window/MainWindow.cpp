@@ -9,8 +9,11 @@
 #include <DGuiApplicationHelper>
 #include <iostream>
 #include <QScreen>
+#include <QProcess>
+#include <QProcessEnvironment>
 #include <QTimer>
 #include <QWindow>
+#include <KWindowEffects>
 #include <LayerShellQt/Window>
 
 DGUI_USE_NAMESPACE
@@ -50,6 +53,10 @@ MainWindow::MainWindow(QScreen *screen, bool enableBlacklist, QWidget *parent)
     if (m_isWayland) {
         initLayerShell(screen);
     } else {
+        winId();
+        if (QWindow* window = windowHandle()) {
+            window->setScreen(screen);
+        }
         m_xcbMisc->set_window_type(winId(), XcbMisc::Dock);
     }
     m_mainPanel->setDisplayMode(m_settings->displayMode());
@@ -69,16 +76,24 @@ MainWindow::MainWindow(QScreen *screen, bool enableBlacklist, QWidget *parent)
     this->adjustPosition();
 
     setVisible(true);
+    m_platformWindowHandle.setTranslucentBackground(true);
+    m_platformWindowHandle.setEnableBlurWindow(true);
+    m_platformWindowHandle.setWindowRadius(0);
     if (!m_isWayland) {
-        // platformwindowhandle only works when the widget is visible...
-        m_platformWindowHandle.setEnableBlurWindow(true);
-        m_platformWindowHandle.setTranslucentBackground(true);
-        m_platformWindowHandle.setWindowRadius(0);  // have no idea why it doesn't work :(
         m_platformWindowHandle.setShadowOffset(QPoint(0, 5));
         m_platformWindowHandle.setShadowColor(QColor(0, 0, 0, 0.3 * 255));
         m_platformWindowHandle.setBorderWidth(1);
-    } else {
-        setBlurEnabled(true);
+    }
+
+    setBlendMode(DBlurEffectWidget::BehindWindowBlend);
+    setFull(true);
+    setBlurEnabled(true);
+
+    // KWin-compatible compositors expose blur through KWindowEffects instead
+    // of the Treeland personalization protocol.  Registering both is safe and
+    // keeps the panel blurred on either compositor implementation.
+    if (m_isWayland && windowHandle()) {
+        KWindowEffects::enableBlurBehind(windowHandle(), true);
     }
 
 
@@ -303,12 +318,16 @@ void MainWindow::loadPlugins() {
 }
 
 void MainWindow::moveToScreen(QScreen *screen) {
+    if (!screen) {
+        return;
+    }
+
+    if (QWindow *win = windowHandle()) {
+        win->setScreen(screen);
+    }
     m_settings->moveToScreen(screen);
 
     if (m_isWayland) {
-        if (QWindow *win = windowHandle()) {
-            win->setScreen(screen);
-        }
         updateLayerShellExclusiveZone();
         return;
     }
@@ -322,11 +341,7 @@ void MainWindow::moveToScreen(QScreen *screen) {
 }
 
 void MainWindow::setRaidus(int radius) {
-    if (m_isWayland) {
-        return;
-    }
-
-    m_platformWindowHandle.setWindowRadius(radius);  // have no idea why it doesn't work :(
+    m_platformWindowHandle.setWindowRadius(radius);
 }
 
 void MainWindow::adjustPanelSize() {
@@ -371,8 +386,10 @@ void MainWindow::adjustPosition() {
         return;
     }
 
-    std::cout << "++++++++++ " << m_settings->m_frontendRect.topLeft().x() << std::endl;
-    this->move(m_settings->m_frontendRect.topLeft() / m_settings->m_screen->devicePixelRatio());
+    // QWidget expects logical virtual-desktop coordinates.  m_frontendRect is
+    // expressed in native pixels for XCB/DBus, so dividing its global origin
+    // by the output DPR also scales the screen offset and causes overlap.
+    this->move(m_settings->windowRect(m_settings->position(), false).topLeft());
 }
 
 void MainWindow::resizeEvent(QResizeEvent* e) {
@@ -385,10 +402,14 @@ void MainWindow::resizeEvent(QResizeEvent* e) {
 }
 
 TopPanelLauncher::TopPanelLauncher()
-        : m_display(new DBusDisplay(this))
+        : m_settingWidget(nullptr)
+        , primaryScreen(nullptr)
+        , m_display(new DBusDisplay(this))
         , m_rearrangeTimer(new QTimer(this))
         , m_isWayland(Utils::isWayland()) {
-    this->m_settingWidget = new MainSettingWidget();
+    if (!m_isWayland) {
+        m_settingWidget = new MainSettingWidget();
+    }
 
     m_rearrangeTimer->setSingleShot(true);
     m_rearrangeTimer->setInterval(100);
@@ -434,6 +455,20 @@ void TopPanelLauncher::onScreenRemoved(QScreen *screen) {
 MainWindow* TopPanelLauncher::createPanel(QScreen* screen) {
     MainWindow* mw = new MainWindow(screen, screen != qApp->primaryScreen());
     connect(mw, &MainWindow::settingActionClicked, this, [this, mw]() {
+        if (m_isWayland) {
+            QProcess settingsProcess;
+            settingsProcess.setProgram(QCoreApplication::applicationFilePath());
+            settingsProcess.setArguments({QStringLiteral("--settings")});
+            QProcessEnvironment environment =
+                QProcessEnvironment::systemEnvironment();
+            environment.remove(QStringLiteral("QT_WAYLAND_SHELL_INTEGRATION"));
+            settingsProcess.setProcessEnvironment(environment);
+            if (!settingsProcess.startDetached()) {
+                qWarning() << "Failed to start the settings process";
+            }
+            return;
+        }
+
         QScreen* screen = mw->screen();
         if (screen) {
             this->m_settingWidget->move(screen->geometry().topLeft());
@@ -466,6 +501,11 @@ void TopPanelLauncher::rearrange() {
     for (auto p_screen : targetScreens) {
         if (!p_screen)
             continue;
+
+        connect(p_screen, &QScreen::geometryChanged, this,
+                &TopPanelLauncher::monitorsChanged, Qt::UniqueConnection);
+        connect(p_screen, &QScreen::physicalDotsPerInchChanged, this,
+                &TopPanelLauncher::monitorsChanged, Qt::UniqueConnection);
 
         if (mwMap.contains(p_screen)) {
             // adjust size

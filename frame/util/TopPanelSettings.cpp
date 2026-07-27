@@ -3,62 +3,15 @@
 //
 
 #include "TopPanelSettings.h"
+#include "WaylandMenu.h"
 #include "utils.h"
 #include <QApplication>
 #include <QScreen>
 #include <QAction>
-#include <QWindow>
+#include <QEvent>
 #include <DApplication>
 #include <iostream>
-#include <LayerShellQt/Window>
 #include "CustomSettings.h"
-
-namespace {
-
-// Workaround for QMenu (right click menu) under wayland.
-void configureMenuAsLayerSurface(QWidget* menu, QScreen* screen,
-        const QPoint& pos) {
-    if (!menu) {
-        return;
-    }
-
-    menu->winId();
-    QWindow *win = menu->windowHandle();
-    if (!win) {
-        qWarning() << "(Wayland) Menu: failed to get window handle";
-        return;
-    }
-
-    const bool wasCreated = win->handle() != nullptr;
-    const QString before = win->screen() ? win->screen()->name() : QStringLiteral("null");
-
-    if (screen) {
-        win->setScreen(screen);
-    }
-
-    qWarning() << "(Wayland) Menu:" << menu->metaObject()->className()
-               << "want=" << (screen ? screen->name() : QStringLiteral("null"))
-               << "before=" << before
-               << "after=" << (win->screen() ? win->screen()->name() : QStringLiteral("null"))
-               << "alreadyCreated=" << wasCreated
-               << "pos=" << pos;
-
-    LayerShellQt::Window *ls = LayerShellQt::Window::get(win);
-    ls->setScope(QStringLiteral("menu"));
-    ls->setLayer(LayerShellQt::Window::LayerOverlay);
-    // 不设这个的话默认是 ScreenFromCompositor，output 会传 NULL 交给合成器挑，
-    // 副屏上弹出的菜单会跑到主屏上去；上面的 setScreen() 只有配合它才生效
-    ls->setScreenConfiguration(LayerShellQt::Window::ScreenFromQWindow);
-    ls->setAnchors(LayerShellQt::Window::Anchors(
-        LayerShellQt::Window::AnchorTop | LayerShellQt::Window::AnchorLeft));
-    ls->setExclusiveZone(-1);
-    ls->setMargins(QMargins(pos.x(), pos.y(), 0, 0));
-    ls->setKeyboardInteractivity(
-        LayerShellQt::Window::KeyboardInteractivityOnDemand);
-    ls->setCloseOnDismissed(true);
-}
-
-}  // namespace
 
 #define WINDOW_MAX_SIZE          100
 
@@ -90,19 +43,10 @@ TopPanelSettings::TopPanelSettings(DockItemManager *itemManager, QScreen *screen
 
     m_hideSubMenu = new QMenu(&m_settingsMenu);
     m_hideSubMenu->setAccessibleName("pluginsmenu");
+    m_settingsMenu.installEventFilter(this);
+    m_hideSubMenu->installEventFilter(this);
     QAction *hideSubMenuAct = new QAction(tr("Plugins"), this);
     hideSubMenuAct->setMenu(m_hideSubMenu);
-
-    // Also handle submenu for Wayland
-    connect(m_hideSubMenu, &QMenu::aboutToShow, this, [this, hideSubMenuAct]() {
-        if (!Utils::isWayland()) {
-            return;
-        }
-        const QRect actRect = m_settingsMenu.actionGeometry(hideSubMenuAct);
-        configureMenuAsLayerSurface(
-            m_hideSubMenu, m_screen,
-            m_menuLayerPos + QPoint(m_settingsMenu.width(), actRect.top()));
-    });
 
     m_settingsMenu.addAction(hideSubMenuAct);
     m_settingsMenu.setTitle("Settings Menu");
@@ -114,6 +58,9 @@ TopPanelSettings::TopPanelSettings(DockItemManager *itemManager, QScreen *screen
 
     QAction *restartAction = new QAction(tr("Restart"), this);
     m_settingsMenu.addAction(restartAction);
+
+    WaylandMenu::installStyle(&m_settingsMenu);
+    WaylandMenu::installStyle(m_hideSubMenu);
 
     connect(&m_settingsMenu, &QMenu::triggered, this, &TopPanelSettings::menuActionClicked);
     connect(settingAction, &QAction::triggered, this, &TopPanelSettings::settingActionClicked);
@@ -179,7 +126,8 @@ void TopPanelSettings::showDockSettingsMenu(const QPoint &panelPos)
 
     if (Utils::isWayland()) {
         m_menuLayerPos = QPoint(panelPos.x(), m_mainWindowSize.height());
-        configureMenuAsLayerSurface(&m_settingsMenu, m_screen, m_menuLayerPos);
+        WaylandMenu::configure(&m_settingsMenu, m_screen, m_menuLayerPos);
+        WaylandMenu::configureSubmenus(&m_settingsMenu, m_screen);
     }
 
     m_settingsMenu.exec(Utils::isWayland() ? m_menuLayerPos : QCursor::pos());
@@ -198,6 +146,23 @@ void TopPanelSettings::menuActionClicked(QAction *action)
         if (p->pluginName() == data)
             return p->pluginStateSwitched();
     }
+}
+
+bool TopPanelSettings::eventFilter(QObject *watched, QEvent *event)
+{
+    if (Utils::isWayland()
+        && (watched == &m_settingsMenu || watched == m_hideSubMenu)) {
+        auto *menu = static_cast<QWidget *>(watched);
+        if (event->type() == QEvent::Show) {
+            WaylandMenu::updateEffects(static_cast<QMenu *>(menu));
+        } else if (event->type() == QEvent::Resize) {
+            // Updating the stylesheet from inside Resize can itself trigger a
+            // relayout.  Only the compositor blur region depends on size.
+            WaylandMenu::updateBlurRegion(static_cast<QMenu *>(menu));
+        }
+    }
+
+    return QObject::eventFilter(watched, event);
 }
 
 void TopPanelSettings::calculateWindowConfig()
@@ -246,13 +211,10 @@ void TopPanelSettings::resetFrontendGeometry()
     const uint w = r.width() * ratio;
     const uint h = r.height() * ratio;
 
-    int dockMargin = this->realDDEDockWidth();
-    if (this->m_dockInter->position() != Left) {
-        dockMargin = p.x();
-    }
-
-    std::cout << "Dock Margin = " << dockMargin << std::endl;
-    m_frontendRect = QRect(dockMargin, p.y(), w, h);
+    // Replacing global X coordinate w/ Dock width drops secondary screen's
+    // origin & moves all X11 panels on the top of primary one, causing
+    // the top panel looking wired on X11 dual screen.
+    m_frontendRect = QRect(p.x(), p.y(), w, h);
     if (CustomSettings::instance()->isIgnoreDock()) {
         m_dockInter->setPosition(Top);
         m_dockInter->setHideMode(KeepShowing);
@@ -310,9 +272,7 @@ const int TopPanelSettings::dockMargin() const
 
 qreal TopPanelSettings::dockRatio() const
 {
-    QScreen const *screen = Utils::screenAtByScaled(m_frontendRect.center());
-
-    return screen ? screen->devicePixelRatio() : qApp->devicePixelRatio();
+    return m_screen ? m_screen->devicePixelRatio() : qApp->devicePixelRatio();
 }
 
 void TopPanelSettings::applyCustomSettings(const CustomSettings& customSettings) {

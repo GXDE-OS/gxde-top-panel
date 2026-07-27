@@ -127,9 +127,7 @@ namespace Utils {
 
     inline QScreen *screenAt(const QPoint &point) {
         for (QScreen *screen : qApp->screens()) {
-            const QRect r { screen->geometry() };
-            const QRect rect { r.topLeft(), r.size() * screen->devicePixelRatio() };
-            if (rect.contains(point)) {
+            if (screen->geometry().contains(point)) {
                 return screen;
             }
         }
@@ -140,9 +138,8 @@ namespace Utils {
 //!!! 注意:这里传入的QPoint是未计算缩放的
     inline QScreen *screenAtByScaled(const QPoint &point) {
         for (QScreen *screen : qApp->screens()) {
-            const QRect r { screen->geometry() };
-            QRect rect { r.topLeft(), r.size() * screen->devicePixelRatio() };
-            if (rect.contains(point)) {
+            // fix: Bar overlapping on X11 dual screen.
+            if (screen->geometry().contains(point)) {
                 return screen;
             }
         }
