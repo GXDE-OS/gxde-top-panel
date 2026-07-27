@@ -18,6 +18,8 @@ Build-Depends:
  libkf6windowsystem-dev,
  liblayershellqtinterface-dev,
  layer-shell-qt,
+ libwayland-dev,
+ libwayland-bin,
  libxcb-ewmh-dev,
  libxdo-dev,
  pkg-config,

@@ -50,7 +50,14 @@ int main(int argc, char *argv[]) {
 
 //    MainWindow mw(qApp->primaryScreen());
 //    mw.loadPlugins();
-    if (!app.setSingleInstance(QString("gxde-top-panel_%1").arg(getuid()))) {
+    QByteArray displayName = qgetenv("WAYLAND_DISPLAY");
+    if (displayName.isEmpty()) {
+        displayName = qgetenv("DISPLAY");
+    }
+    const QString instanceKey = QStringLiteral("gxde-top-panel_%1_%2")
+                                    .arg(getuid())
+                                    .arg(QString::fromLatin1(displayName.toHex()));
+    if (!app.setSingleInstance(instanceKey)) {
         qDebug() << "set single instance failed!!!!";
         return -1;
     }

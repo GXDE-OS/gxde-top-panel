@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Client-side copy of the protocol implemented by GXDE Wlcom.
+  Kept in-tree so release builds do not depend on the compositor source tree.
+-->
+<protocol name="plasma_window_management">
+  <copyright><![CDATA[
+    SPDX-FileCopyrightText: 2013-2014 Pier Luigi Fiorini
+
+    SPDX-License-Identifier: LGPL-2.1-or-later
+  ]]></copyright>
+  <interface name="org_kde_plasma_window_management" version="17">
+    <enum name="state" bitfield="true">
+      <entry name="active" value="0x1"/>
+      <entry name="minimized" value="0x2"/>
+      <entry name="maximized" value="0x4"/>
+      <entry name="fullscreen" value="0x8"/>
+      <entry name="keep_above" value="0x10"/>
+      <entry name="keep_below" value="0x20"/>
+      <entry name="on_all_desktops" value="0x40"/>
+      <entry name="demands_attention" value="0x80"/>
+      <entry name="closeable" value="0x100"/>
+      <entry name="minimizable" value="0x200"/>
+      <entry name="maximizable" value="0x400"/>
+      <entry name="fullscreenable" value="0x800"/>
+      <entry name="skiptaskbar" value="0x1000" since="2"/>
+      <entry name="shadeable" value="0x2000" since="3"/>
+      <entry name="shaded" value="0x4000" since="3"/>
+      <entry name="movable" value="0x8000" since="3"/>
+      <entry name="resizable" value="0x10000" since="3"/>
+      <entry name="virtual_desktop_changeable" value="0x20000" since="3"/>
+      <entry name="skipswitcher" value="0x40000" since="9"/>
+    </enum>
+    <enum name="show_desktop">
+      <entry name="disabled" value="0"/>
+      <entry name="enabled" value="1"/>
+    </enum>
+    <request name="show_desktop"><arg name="state" type="uint"/></request>
+    <request name="get_window">
+      <arg name="id" type="new_id" interface="org_kde_plasma_window"/>
+      <arg name="internal_window_id" type="uint"/>
+    </request>
+    <request name="get_window_by_uuid" since="12">
+      <arg name="id" type="new_id" interface="org_kde_plasma_window"/>
+      <arg name="internal_window_uuid" type="string"/>
+    </request>
+    <event name="show_desktop_changed"><arg name="state" type="uint"/></event>
+    <event name="window"><arg name="id" type="uint"/></event>
+    <event name="stacking_order_changed" since="11"><arg name="ids" type="array"/></event>
+    <event name="stacking_order_uuid_changed" since="12"><arg name="uuids" type="string"/></event>
+    <event name="window_with_uuid" since="13">
+      <arg name="id" type="uint"/>
+      <arg name="uuid" type="string"/>
+    </event>
+    <event name="stacking_order_changed_2" since="17"/>
+    <request name="get_stacking_order" since="17">
+      <arg name="stacking_order" type="new_id" interface="org_kde_plasma_stacking_order"/>
+    </request>
+  </interface>
+
+  <interface name="org_kde_plasma_window" version="17">
+    <request name="set_state">
+      <arg name="flags" type="uint"/>
+      <arg name="state" type="uint"/>
+    </request>
+    <request name="set_virtual_desktop"><arg name="number" type="uint"/></request>
+    <request name="set_minimized_geometry">
+      <arg name="panel" type="object" interface="wl_surface"/>
+      <arg name="x" type="uint"/><arg name="y" type="uint"/>
+      <arg name="width" type="uint"/><arg name="height" type="uint"/>
+    </request>
+    <request name="unset_minimized_geometry">
+      <arg name="panel" type="object" interface="wl_surface"/>
+    </request>
+    <request name="close"/>
+    <request name="request_move" since="3"/>
+    <request name="request_resize" since="3"/>
+    <request name="destroy" type="destructor" since="4"/>
+    <request name="get_icon" since="7"><arg name="fd" type="fd"/></request>
+    <event name="title_changed"><arg name="title" type="string"/></event>
+    <event name="app_id_changed"><arg name="app_id" type="string"/></event>
+    <event name="state_changed"><arg name="flags" type="uint"/></event>
+    <event name="virtual_desktop_changed"><arg name="number" type="int"/></event>
+    <event name="themed_icon_name_changed"><arg name="name" type="string"/></event>
+    <event name="unmapped"/>
+    <event name="initial_state" since="4"/>
+    <event name="parent_window" since="5">
+      <arg name="parent" type="object" interface="org_kde_plasma_window" allow-null="true"/>
+    </event>
+    <event name="geometry" since="6">
+      <arg name="x" type="int"/><arg name="y" type="int"/>
+      <arg name="width" type="uint"/><arg name="height" type="uint"/>
+    </event>
+    <event name="icon_changed" since="7"/>
+    <event name="pid_changed"><arg name="pid" type="uint"/></event>
+    <request name="request_enter_virtual_desktop" since="8"><arg name="id" type="string"/></request>
+    <request name="request_enter_new_virtual_desktop" since="8"/>
+    <request name="request_leave_virtual_desktop" since="8"><arg name="id" type="string"/></request>
+    <event name="virtual_desktop_entered" since="8"><arg name="id" type="string"/></event>
+    <event name="virtual_desktop_left" since="8"><arg name="is" type="string"/></event>
+    <event name="application_menu" since="10">
+      <arg name="service_name" type="string"/>
+      <arg name="object_path" type="string"/>
+    </event>
+    <request name="request_enter_activity" since="14"><arg name="id" type="string"/></request>
+    <request name="request_leave_activity" since="14"><arg name="id" type="string"/></request>
+    <event name="activity_entered" since="14"><arg name="id" type="string"/></event>
+    <event name="activity_left" since="14"><arg name="id" type="string"/></event>
+    <request name="send_to_output" since="15"><arg name="output" type="object" interface="wl_output"/></request>
+    <event name="resource_name_changed" since="16"><arg name="resource_name" type="string"/></event>
+  </interface>
+
+  <interface name="org_kde_plasma_activation_feedback" version="1">
+    <request name="destroy" type="destructor"/>
+    <event name="activation"><arg name="id" type="new_id" interface="org_kde_plasma_activation"/></event>
+  </interface>
+  <interface name="org_kde_plasma_activation" version="1">
+    <request name="destroy" type="destructor"/>
+    <event name="app_id"><arg name="app_id" type="string"/></event>
+    <event name="finished"/>
+  </interface>
+  <interface name="org_kde_plasma_stacking_order" version="17">
+    <event name="window"><arg name="uuid" type="string"/></event>
+    <event name="done" type="destructor"/>
+  </interface>
+</protocol>

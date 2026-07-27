@@ -19,19 +19,45 @@ find_package(LayerShellQt REQUIRED)
 pkg_check_modules(XCB_EWMH REQUIRED xcb-ewmh x11)
 pkg_check_modules(QGSettings REQUIRED gsettings-qt6)
 pkg_check_modules(DtkGUI REQUIRED dtk6gui)
+pkg_check_modules(WAYLAND_CLIENT REQUIRED wayland-client)
 
-set(TS_FILES
-        ${CMAKE_SOURCE_DIR}/translations/gxde-top-panel_zh_CN.ts
-        )
+find_program(WAYLAND_SCANNER_EXECUTABLE NAMES wayland-scanner REQUIRED)
 
-set_source_files_properties(${TS_FILES} PROPERTIES OUTPUT_LOCATION ${CMAKE_BINARY_DIR}/translations)
-qt6_create_translation(QM_FILES ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../widgets ${TS_FILES})
-qt6_add_translation(QM_FILES ${TS_FILES})
+set(PLASMA_WINDOW_MANAGEMENT_PROTOCOL
+        ${CMAKE_SOURCE_DIR}/protocols/plasma-window-management.xml)
+set(WAYLAND_GENERATED_DIR ${CMAKE_CURRENT_BINARY_DIR}/wayland-generated)
+set(PLASMA_WINDOW_MANAGEMENT_CLIENT_HEADER
+        ${WAYLAND_GENERATED_DIR}/plasma-window-management-client-protocol.h)
+set(PLASMA_WINDOW_MANAGEMENT_PRIVATE_CODE
+        ${WAYLAND_GENERATED_DIR}/plasma-window-management-protocol.c)
+
+add_custom_command(
+        OUTPUT
+        ${PLASMA_WINDOW_MANAGEMENT_CLIENT_HEADER}
+        ${PLASMA_WINDOW_MANAGEMENT_PRIVATE_CODE}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${WAYLAND_GENERATED_DIR}
+        COMMAND ${WAYLAND_SCANNER_EXECUTABLE} client-header
+                ${PLASMA_WINDOW_MANAGEMENT_PROTOCOL}
+                ${PLASMA_WINDOW_MANAGEMENT_CLIENT_HEADER}
+        COMMAND ${WAYLAND_SCANNER_EXECUTABLE} private-code
+                ${PLASMA_WINDOW_MANAGEMENT_PROTOCOL}
+                ${PLASMA_WINDOW_MANAGEMENT_PRIVATE_CODE}
+        DEPENDS ${PLASMA_WINDOW_MANAGEMENT_PROTOCOL}
+        VERBATIM
+)
 
 # driver-manager
-add_executable(${BIN_NAME} ${SRCS} ${INTERFACES} ${QM_FILES} item/item.qrc frame.qrc)
+add_executable(${BIN_NAME}
+        ${SRCS}
+        ${INTERFACES}
+        ${PLASMA_WINDOW_MANAGEMENT_CLIENT_HEADER}
+        ${PLASMA_WINDOW_MANAGEMENT_PRIVATE_CODE}
+        item/item.qrc
+        frame.qrc)
 target_include_directories(${BIN_NAME} PUBLIC
         ${XCB_EWMH_INCLUDE_DIRS}
+        ${WAYLAND_CLIENT_INCLUDE_DIRS}
+        ${WAYLAND_GENERATED_DIR}
         /usr/include/libdframeworkdbus-qt6-6.0/
         ${PROJECT_BINARY_DIR}
         ${QGSettings_INCLUDE_DIRS}
@@ -59,6 +85,7 @@ target_link_libraries(${BIN_NAME} PRIVATE
         Qt6::Svg
         KF6::WindowSystem
         LayerShellQt::Interface
+        ${WAYLAND_CLIENT_LIBRARIES}
         xdo
         X11
         )

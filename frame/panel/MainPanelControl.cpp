@@ -74,7 +74,11 @@ void MainPanelControl::init() {
     m_trayAreaWidget->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
 
 //    this->m_xdo = xdo_new(nullptr);
-    connect(KX11Extras::self(), &KX11Extras::activeWindowChanged, this->activeWindowControlWidget, &ActiveWindowControlWidget::activeWindowInfoChanged);
+    if (KWindowSystem::isPlatformX11()) {
+        connect(KX11Extras::self(), &KX11Extras::activeWindowChanged,
+                this->activeWindowControlWidget,
+                &ActiveWindowControlWidget::activeWindowInfoChanged);
+    }
     connect(this, &MainPanelControl::emptyAreaDoubleClicked, this->activeWindowControlWidget, &ActiveWindowControlWidget::maximizeWindow);
     this->activeWindowControlWidget->activeWindowInfoChanged();
 }
