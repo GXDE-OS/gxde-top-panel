@@ -65,6 +65,16 @@ AbstractPluginsController::~AbstractPluginsController()
     }
 }
 
+QList<PluginsItemInterface*> AbstractPluginsController::initializedPlugins() const {
+    QList<PluginsItemInterface*> plugins;
+    for (PluginsItemInterface* plugin : m_pluginsMap.keys()) {
+        if (m_initializedPlugins.contains(plugin)) {
+            plugins.append(plugin);
+        }
+    }
+    return plugins;
+}
+
 void AbstractPluginsController::saveValue(PluginsItemInterface *const itemInter, const QString &key, const QVariant &value)
 {
     // is it necessary?
@@ -182,7 +192,7 @@ void AbstractPluginsController::startLoader(PluginLoader *loader)
 void AbstractPluginsController::displayModeChanged()
 {
     const Dock::DisplayMode displayMode = qApp->property(PROP_DISPLAY_MODE).value<Dock::DisplayMode>();
-    const auto inters = m_pluginsMap.keys();
+    const auto inters = initializedPlugins();
 
     for (auto inter : inters)
         inter->displayModeChanged(displayMode);
@@ -191,7 +201,7 @@ void AbstractPluginsController::displayModeChanged()
 void AbstractPluginsController::positionChanged()
 {
     const Dock::Position position = qApp->property(PROP_POSITION).value<Dock::Position>();
-    const auto inters = m_pluginsMap.keys();
+    const auto inters = initializedPlugins();
 
     for (auto inter : inters)
         inter->positionChanged(position);
@@ -289,10 +299,14 @@ void AbstractPluginsController::loadPlugin(const QString &pluginFile)
     });
 }
 
-void AbstractPluginsController::initPlugin(PluginsItemInterface *interface)
-{
+void AbstractPluginsController::initPlugin(PluginsItemInterface* interface) {
+    if (!interface || m_initializedPlugins.contains(interface)) {
+        return;
+    }
+
     qDebug() << objectName() << "init plugin: " << interface->pluginName();
     interface->init(this);
+    m_initializedPlugins.insert(interface);
 
     for (const auto &pair : m_pluginLoadMap.keys()) {
         if (pair.second == interface)
@@ -344,7 +358,7 @@ void AbstractPluginsController::refreshPluginSettings()
     }
 
     // notify all plugins to reload plugin settings
-    for (PluginsItemInterface *pluginInter : m_pluginsMap.keys()) {
+    for (PluginsItemInterface *pluginInter : initializedPlugins()) {
         pluginInter->pluginSettingsChanged();
     }
 

@@ -30,6 +30,7 @@
 #include <QPluginLoader>
 #include <QList>
 #include <QMap>
+#include <QSet>
 #include <QDBusConnectionInterface>
 
 using DockDaemonInter = DockInterface;
@@ -42,6 +43,8 @@ Q_OBJECT
 public:
     explicit AbstractPluginsController(QObject *parent = 0);
     ~ AbstractPluginsController() override;
+
+    QList<PluginsItemInterface *> initializedPlugins() const;
 
     // implements PluginProxyInterface
     void saveValue(PluginsItemInterface *const itemInter, const QString &key, const QVariant &value) override;
@@ -75,6 +78,8 @@ private:
     DockDaemonInter *m_dockDaemonInter;
 
     QMap<PluginsItemInterface *, QMap<QString, QObject *>> m_pluginsMap;
+
+    QSet<PluginsItemInterface *> m_initializedPlugins;
 
     // filepath, interface, loaded
     QMap<QPair<QString, PluginsItemInterface *>, bool> m_pluginLoadMap;
