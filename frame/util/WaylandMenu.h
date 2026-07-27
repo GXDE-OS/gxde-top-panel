@@ -8,6 +8,8 @@ class QScreen;
 
 namespace WaylandMenu {
 
+bool installStyle(QMenu *menu);
+
 // layerPosition is relative to the top-left corner of screen.
 void configure(QMenu *menu, QScreen *screen, const QPoint &layerPosition);
 void configureSubmenus(QMenu *menu, QScreen *screen);

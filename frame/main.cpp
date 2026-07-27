@@ -40,9 +40,6 @@ int main(int argc, char *argv[]) {
         // window in this process.
         // Make a exception for settings page...
         if (settingsMode) {
-            // The settings process is spawned by the panel and inherits its
-            // environment.  Clear the shell selector before QApplication is
-            // constructed so Qt creates an xdg_toplevel, not a layer_surface.
             qunsetenv("QT_WAYLAND_SHELL_INTEGRATION");
         } else {
             LayerShellQt::Shell::useLayerShell();
