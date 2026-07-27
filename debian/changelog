@@ -7,7 +7,7 @@ gxde-top-panel (1.0.5-gxde1) UNRELEASED; urgency=medium
   * 修复在Wayland下无法获取原生Wayland位于屏幕顶端的程序/窗口名称与图标的问题
   * 修复在Wayland下频繁崩溃的问题
 
- -- gfdgd_xi <3025613752@qq.com>  Mon, 27 Jul 2026 19:23:54 +0800
+ -- CharOfString <root@charofstring.cc>  Mon, 27 Jul 2026 19:23:54 +0800
 
 gxde-top-panel (1.0.5) UNRELEASED; urgency=medium
 
