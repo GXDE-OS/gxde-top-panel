@@ -45,8 +45,6 @@ TopPanelSettings::TopPanelSettings(DockItemManager *itemManager, QScreen *screen
     m_hideSubMenu->setAccessibleName("pluginsmenu");
     m_settingsMenu.installEventFilter(this);
     m_hideSubMenu->installEventFilter(this);
-    m_settingsMenu.setAttribute(Qt::WA_TranslucentBackground);
-    m_hideSubMenu->setAttribute(Qt::WA_TranslucentBackground);
     QAction *hideSubMenuAct = new QAction(tr("Plugins"), this);
     hideSubMenuAct->setMenu(m_hideSubMenu);
 
@@ -213,13 +211,10 @@ void TopPanelSettings::resetFrontendGeometry()
     const uint w = r.width() * ratio;
     const uint h = r.height() * ratio;
 
-    int dockMargin = this->realDDEDockWidth();
-    if (this->m_dockInter->position() != Left) {
-        dockMargin = p.x();
-    }
-
-    std::cout << "Dock Margin = " << dockMargin << std::endl;
-    m_frontendRect = QRect(dockMargin, p.y(), w, h);
+    // Replacing global X coordinate w/ Dock width drops secondary screen's
+    // origin & moves all X11 panels on the top of primary one, causing
+    // the top panel looking wired on X11 dual screen.
+    m_frontendRect = QRect(p.x(), p.y(), w, h);
     if (CustomSettings::instance()->isIgnoreDock()) {
         m_dockInter->setPosition(Top);
         m_dockInter->setHideMode(KeepShowing);
@@ -277,9 +272,7 @@ const int TopPanelSettings::dockMargin() const
 
 qreal TopPanelSettings::dockRatio() const
 {
-    QScreen const *screen = Utils::screenAtByScaled(m_frontendRect.center());
-
-    return screen ? screen->devicePixelRatio() : qApp->devicePixelRatio();
+    return m_screen ? m_screen->devicePixelRatio() : qApp->devicePixelRatio();
 }
 
 void TopPanelSettings::applyCustomSettings(const CustomSettings& customSettings) {

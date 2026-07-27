@@ -53,6 +53,10 @@ MainWindow::MainWindow(QScreen *screen, bool enableBlacklist, QWidget *parent)
     if (m_isWayland) {
         initLayerShell(screen);
     } else {
+        winId();
+        if (QWindow* window = windowHandle()) {
+            window->setScreen(screen);
+        }
         m_xcbMisc->set_window_type(winId(), XcbMisc::Dock);
     }
     m_mainPanel->setDisplayMode(m_settings->displayMode());
@@ -314,12 +318,16 @@ void MainWindow::loadPlugins() {
 }
 
 void MainWindow::moveToScreen(QScreen *screen) {
+    if (!screen) {
+        return;
+    }
+
+    if (QWindow *win = windowHandle()) {
+        win->setScreen(screen);
+    }
     m_settings->moveToScreen(screen);
 
     if (m_isWayland) {
-        if (QWindow *win = windowHandle()) {
-            win->setScreen(screen);
-        }
         updateLayerShellExclusiveZone();
         return;
     }
@@ -378,8 +386,10 @@ void MainWindow::adjustPosition() {
         return;
     }
 
-    std::cout << "++++++++++ " << m_settings->m_frontendRect.topLeft().x() << std::endl;
-    this->move(m_settings->m_frontendRect.topLeft() / m_settings->m_screen->devicePixelRatio());
+    // QWidget expects logical virtual-desktop coordinates.  m_frontendRect is
+    // expressed in native pixels for XCB/DBus, so dividing its global origin
+    // by the output DPR also scales the screen offset and causes overlap.
+    this->move(m_settings->windowRect(m_settings->position(), false).topLeft());
 }
 
 void MainWindow::resizeEvent(QResizeEvent* e) {
@@ -491,6 +501,11 @@ void TopPanelLauncher::rearrange() {
     for (auto p_screen : targetScreens) {
         if (!p_screen)
             continue;
+
+        connect(p_screen, &QScreen::geometryChanged, this,
+                &TopPanelLauncher::monitorsChanged, Qt::UniqueConnection);
+        connect(p_screen, &QScreen::physicalDotsPerInchChanged, this,
+                &TopPanelLauncher::monitorsChanged, Qt::UniqueConnection);
 
         if (mwMap.contains(p_screen)) {
             // adjust size
