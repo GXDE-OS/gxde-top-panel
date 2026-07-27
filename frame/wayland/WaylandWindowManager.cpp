@@ -295,9 +295,16 @@ void WaylandWindowManager::flush()
     }
 }
 
-void WaylandWindowManager::showDesktopChanged(void *, org_kde_plasma_window_management *,
-                                              uint32_t)
+void WaylandWindowManager::showDesktopChanged(void *data,
+                                              org_kde_plasma_window_management *,
+                                              uint32_t state)
 {
+    auto *manager = static_cast<WaylandWindowManager *>(data);
+    if (state == ORG_KDE_PLASMA_WINDOW_MANAGEMENT_SHOW_DESKTOP_ENABLED
+        && manager->m_activeWindow) {
+        manager->m_activeWindow = nullptr;
+        emit manager->activeWindowChanged();
+    }
 }
 
 void WaylandWindowManager::windowCreated(void *data, org_kde_plasma_window_management *,
@@ -363,9 +370,14 @@ void WaylandWindowManager::stateChanged(void *data, org_kde_plasma_window *,
 
     if (window->info.active) {
         manager->m_activeWindow = window;
-    } else if (wasActive) {
-        manager->m_activeWindow = nullptr;
     }
+    // A pointer press on the panel's layer surface can deactivate the app
+    // before QToolButton emits clicked() on release.  Keep the last active
+    // application as the control target; otherwise maximize, minimize and
+    // close all see a null m_activeWindow and silently do nothing.
+    //
+    // The pointer is replaced when another app becomes active and is cleared
+    // when the window is unmapped or Show Desktop is entered.
 
     if (window->initialStateReceived && (wasActive || window->info.active)) {
         emit manager->activeWindowChanged();

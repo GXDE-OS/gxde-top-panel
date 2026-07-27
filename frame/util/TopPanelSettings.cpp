@@ -3,129 +3,15 @@
 //
 
 #include "TopPanelSettings.h"
+#include "WaylandMenu.h"
 #include "utils.h"
 #include <QApplication>
 #include <QScreen>
 #include <QAction>
 #include <QEvent>
-#include <QPainterPath>
-#include <QPalette>
-#include <QRegion>
-#include <QWindow>
 #include <DApplication>
-#include <DPlatformWindowHandle>
-#include <KWindowEffects>
 #include <iostream>
-#include <LayerShellQt/Window>
 #include "CustomSettings.h"
-
-namespace {
-
-constexpr int WaylandMenuRadius = 10;
-
-QRegion roundedMenuRegion(const QWidget *menu)
-{
-    if (!menu || menu->width() <= 0 || menu->height() <= 0) {
-        return {};
-    }
-
-    QPainterPath path;
-    path.addRoundedRect(QRectF(menu->rect()), WaylandMenuRadius,
-                        WaylandMenuRadius);
-    return QRegion(path.toFillPolygon().toPolygon());
-}
-
-void updateWaylandMenuEffects(QWidget *menu)
-{
-    if (!menu || !Utils::isWayland()) {
-        return;
-    }
-
-    menu->setAttribute(Qt::WA_TranslucentBackground);
-
-    const QColor background = menu->palette().color(QPalette::Window);
-    const QColor border = menu->palette().color(QPalette::Mid);
-    menu->setStyleSheet(QStringLiteral(
-        "QMenu { background-color: rgba(%1, %2, %3, 220); "
-        "border: 1px solid rgba(%4, %5, %6, 110); "
-        "border-radius: %7px; padding: 4px; }")
-        .arg(background.red()).arg(background.green()).arg(background.blue())
-        .arg(border.red()).arg(border.green()).arg(border.blue())
-        .arg(WaylandMenuRadius));
-
-    QWindow *win = menu->windowHandle();
-    if (!win) {
-        return;
-    }
-
-    constexpr auto HandleName = "wayland-menu-platform-handle";
-    auto *handle = menu->findChild<Dtk::Widget::DPlatformWindowHandle *>(
-        QString::fromLatin1(HandleName), Qt::FindDirectChildrenOnly);
-    if (!handle) {
-        handle = new Dtk::Widget::DPlatformWindowHandle(menu, menu);
-        handle->setObjectName(QString::fromLatin1(HandleName));
-    }
-    handle->setTranslucentBackground(true);
-    handle->setWindowRadius(WaylandMenuRadius);
-    handle->setEnableBlurWindow(true);
-
-    KWindowEffects::enableBlurBehind(win, true, roundedMenuRegion(menu));
-}
-
-void updateWaylandMenuBlurRegion(QWidget *menu)
-{
-    if (menu && menu->windowHandle()) {
-        KWindowEffects::enableBlurBehind(menu->windowHandle(), true,
-                                         roundedMenuRegion(menu));
-    }
-}
-
-// Workaround for QMenu (right click menu) under wayland.
-void configureMenuAsLayerSurface(QWidget* menu, QScreen* screen,
-        const QPoint& pos) {
-    if (!menu) {
-        return;
-    }
-
-    menu->winId();
-    QWindow *win = menu->windowHandle();
-    if (!win) {
-        qWarning() << "(Wayland) Menu: failed to get window handle";
-        return;
-    }
-
-    const bool wasCreated = win->handle() != nullptr;
-    const QString before = win->screen() ? win->screen()->name() : QStringLiteral("null");
-
-    if (screen) {
-        win->setScreen(screen);
-    }
-
-    qWarning() << "(Wayland) Menu:" << menu->metaObject()->className()
-               << "want=" << (screen ? screen->name() : QStringLiteral("null"))
-               << "before=" << before
-               << "after=" << (win->screen() ? win->screen()->name() : QStringLiteral("null"))
-               << "alreadyCreated=" << wasCreated
-               << "pos=" << pos;
-
-    LayerShellQt::Window *ls = LayerShellQt::Window::get(win);
-    ls->setScope(QStringLiteral("menu"));
-    ls->setLayer(LayerShellQt::Window::LayerOverlay);
-    // 不设这个的话默认是 ScreenFromCompositor，output 会传 NULL 交给合成器挑，
-    // 副屏上弹出的菜单会跑到主屏上去；上面的 setScreen() 只有配合它才生效
-    ls->setScreenConfiguration(LayerShellQt::Window::ScreenFromQWindow);
-    ls->setAnchors(LayerShellQt::Window::Anchors(
-        LayerShellQt::Window::AnchorTop | LayerShellQt::Window::AnchorLeft));
-    ls->setExclusiveZone(-1);
-    ls->setMargins(QMargins(pos.x(), pos.y(), 0, 0));
-    ls->setKeyboardInteractivity(
-        LayerShellQt::Window::KeyboardInteractivityOnDemand);
-    ls->setCloseOnDismissed(true);
-
-    updateWaylandMenuEffects(menu);
-}
-
-}  // namespace
 
 #define WINDOW_MAX_SIZE          100
 
@@ -163,17 +49,6 @@ TopPanelSettings::TopPanelSettings(DockItemManager *itemManager, QScreen *screen
     m_hideSubMenu->setAttribute(Qt::WA_TranslucentBackground);
     QAction *hideSubMenuAct = new QAction(tr("Plugins"), this);
     hideSubMenuAct->setMenu(m_hideSubMenu);
-
-    // Also handle submenu for Wayland
-    connect(m_hideSubMenu, &QMenu::aboutToShow, this, [this, hideSubMenuAct]() {
-        if (!Utils::isWayland()) {
-            return;
-        }
-        const QRect actRect = m_settingsMenu.actionGeometry(hideSubMenuAct);
-        configureMenuAsLayerSurface(
-            m_hideSubMenu, m_screen,
-            m_menuLayerPos + QPoint(m_settingsMenu.width(), actRect.top()));
-    });
 
     m_settingsMenu.addAction(hideSubMenuAct);
     m_settingsMenu.setTitle("Settings Menu");
@@ -250,7 +125,8 @@ void TopPanelSettings::showDockSettingsMenu(const QPoint &panelPos)
 
     if (Utils::isWayland()) {
         m_menuLayerPos = QPoint(panelPos.x(), m_mainWindowSize.height());
-        configureMenuAsLayerSurface(&m_settingsMenu, m_screen, m_menuLayerPos);
+        WaylandMenu::configure(&m_settingsMenu, m_screen, m_menuLayerPos);
+        WaylandMenu::configureSubmenus(&m_settingsMenu, m_screen);
     }
 
     m_settingsMenu.exec(Utils::isWayland() ? m_menuLayerPos : QCursor::pos());
@@ -277,11 +153,11 @@ bool TopPanelSettings::eventFilter(QObject *watched, QEvent *event)
         && (watched == &m_settingsMenu || watched == m_hideSubMenu)) {
         auto *menu = static_cast<QWidget *>(watched);
         if (event->type() == QEvent::Show) {
-            updateWaylandMenuEffects(menu);
+            WaylandMenu::updateEffects(static_cast<QMenu *>(menu));
         } else if (event->type() == QEvent::Resize) {
             // Updating the stylesheet from inside Resize can itself trigger a
             // relayout.  Only the compositor blur region depends on size.
-            updateWaylandMenuBlurRegion(menu);
+            WaylandMenu::updateBlurRegion(static_cast<QMenu *>(menu));
         }
     }
 

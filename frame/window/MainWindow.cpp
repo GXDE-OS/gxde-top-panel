@@ -9,6 +9,8 @@
 #include <DGuiApplicationHelper>
 #include <iostream>
 #include <QScreen>
+#include <QProcess>
+#include <QProcessEnvironment>
 #include <QTimer>
 #include <QWindow>
 #include <KWindowEffects>
@@ -390,10 +392,14 @@ void MainWindow::resizeEvent(QResizeEvent* e) {
 }
 
 TopPanelLauncher::TopPanelLauncher()
-        : m_display(new DBusDisplay(this))
+        : m_settingWidget(nullptr)
+        , primaryScreen(nullptr)
+        , m_display(new DBusDisplay(this))
         , m_rearrangeTimer(new QTimer(this))
         , m_isWayland(Utils::isWayland()) {
-    this->m_settingWidget = new MainSettingWidget();
+    if (!m_isWayland) {
+        m_settingWidget = new MainSettingWidget();
+    }
 
     m_rearrangeTimer->setSingleShot(true);
     m_rearrangeTimer->setInterval(100);
@@ -439,6 +445,20 @@ void TopPanelLauncher::onScreenRemoved(QScreen *screen) {
 MainWindow* TopPanelLauncher::createPanel(QScreen* screen) {
     MainWindow* mw = new MainWindow(screen, screen != qApp->primaryScreen());
     connect(mw, &MainWindow::settingActionClicked, this, [this, mw]() {
+        if (m_isWayland) {
+            QProcess settingsProcess;
+            settingsProcess.setProgram(QCoreApplication::applicationFilePath());
+            settingsProcess.setArguments({QStringLiteral("--settings")});
+            QProcessEnvironment environment =
+                QProcessEnvironment::systemEnvironment();
+            environment.remove(QStringLiteral("QT_WAYLAND_SHELL_INTEGRATION"));
+            settingsProcess.setProcessEnvironment(environment);
+            if (!settingsProcess.startDetached()) {
+                qWarning() << "Failed to start the settings process";
+            }
+            return;
+        }
+
         QScreen* screen = mw->screen();
         if (screen) {
             this->m_settingWidget->move(screen->geometry().topLeft());

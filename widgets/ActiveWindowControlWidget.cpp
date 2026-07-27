@@ -8,6 +8,7 @@
 #include "ActiveWindowControlWidget.h"
 #include "util/XUtils.h"
 #include "util/utils.h"
+#include "util/WaylandMenu.h"
 #include "wayland/WaylandWindowManager.h"
 #include <QMouseEvent>
 #include <NETWM>
@@ -393,11 +394,25 @@ void ActiveWindowControlWidget::trigger(QClickableLabel *ctx, int idx) {
 
     qDebug() << "ActiveWindowControlWidget#trigger() is running..";
     if (actionMenu) {
-        actionMenu->adjustSize();
-        actionMenu->winId();//create window handle
-        actionMenu->windowHandle()->setTransientParent(ctx->windowHandle());
-        actionMenu->popup(this->m_menuWidget->mapToGlobal(ctx->geometry().bottomLeft()) + QPoint(0, 1));
         actionMenu->installEventFilter(this);
+        const QPoint popupPosition =
+            m_menuWidget->mapToGlobal(ctx->geometry().bottomLeft()) + QPoint(0, 1);
+        if (m_isWayland) {
+            QScreen *targetScreen = screen();
+            if (!targetScreen) {
+                targetScreen = QGuiApplication::screenAt(popupPosition);
+            }
+            const QPoint layerPosition = targetScreen
+                ? popupPosition - targetScreen->geometry().topLeft()
+                : popupPosition;
+            WaylandMenu::configure(actionMenu, targetScreen, layerPosition);
+            WaylandMenu::configureSubmenus(actionMenu, targetScreen);
+        } else {
+            actionMenu->adjustSize();
+            actionMenu->winId(); // create window handle
+            actionMenu->windowHandle()->setTransientParent(ctx->windowHandle());
+        }
+        actionMenu->popup(popupPosition);
 
         QMenu *oldMenu = m_currentMenu;
         m_currentMenu = actionMenu;
@@ -527,6 +542,12 @@ void ActiveWindowControlWidget::applyCustomSettings(const CustomSettings& settin
 bool ActiveWindowControlWidget::eventFilter(QObject *watched, QEvent *event) {
     auto *menu = qobject_cast<QMenu *>(watched);
     if (menu) {
+        if (m_isWayland && event->type() == QEvent::Show) {
+            WaylandMenu::updateEffects(menu);
+        } else if (m_isWayland && event->type() == QEvent::Resize) {
+            WaylandMenu::updateBlurRegion(menu);
+        }
+
         if (event->type() == QEvent::MouseMove) {
             auto *e = dynamic_cast<QMouseEvent *>(event);
 
