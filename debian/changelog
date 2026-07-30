@@ -1,4 +1,4 @@
-gxde-picker (1.0.6) UNRELEASED; urgency=medium
+gxde-top-panel (1.0.6) UNRELEASED; urgency=medium
 
   [ zeqi ]
   * 修复在 x11 下特效丢失的问题
