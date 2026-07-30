@@ -1,3 +1,10 @@
+gxde-picker (1.0.6) UNRELEASED; urgency=medium
+
+  [ zeqi ]
+  * 修复在 x11 下特效丢失的问题
+
+ -- zeqi <a202128502@163.com>  Thu, 30 Jul 2026 12:24:56 +0800
+
 gxde-top-panel (1.0.5-gxde1) UNRELEASED; urgency=medium
 
   * 改进双屏支持: 在Wayland上会为每个屏幕单独绘制一根顶栏; X11下修复在不同分辨率与DPI的两块屏幕下顶栏重叠的问题

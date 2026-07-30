@@ -46,7 +46,8 @@ int main(int argc, char *argv[]) {
         }
     } else {
         // Otherwise DXCB is good to go.
-        qputenv("QT_QPA_PLATFORM", "xcb");
+        // qputenv("QT_QPA_PLATFORM", "xcb");
+        DApplication::loadDXcbPlugin(); // 修复在 x11 下特效丢失的问题
     }
 
     DApplication app(argc, argv);
