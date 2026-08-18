@@ -192,10 +192,11 @@ void MainPanelControl::resizeDockIcon()
 
     int iconSize = 0;
 
-//    // 余数
-//    int yu = (totalLength % iconCount);
-//    // icon宽度 = (总宽度-余数)/icon个数
-//    iconSize = (totalLength - yu) / iconCount;
+    // 余数
+    int yu = (totalLength % iconCount);
+    // icon宽度 = (总宽度-余数)/icon个数
+    if (iconCount > 0)
+        iconSize = (totalLength - yu) / iconCount;
 
     if (iconSize < 20 || iconSize > 40) {
 
@@ -226,10 +227,11 @@ void MainPanelControl::resizeDockIcon()
 void MainPanelControl::calcuDockIconSize(int w, int h, PluginsItem *trashPlugin, PluginsItem *shutdownPlugin, PluginsItem *keyboardPlugin)
 {
     if (m_position == Dock::Position::Top || m_position == Dock::Position::Bottom) {
-//        m_traySpliter->setFixedSize(SPLITER_SIZE, int(w * 0.5));
         // 垃圾桶
+        // 注意：面板高度较小（如 24px）时 h-20 会变成极小甚至负数，拖动后回收站会被压成 0 宽而消失，
+        // 因此这里用受限后的图标尺寸，高度取面板高度，保证其始终可见。
         if (trashPlugin)
-            trashPlugin->setFixedSize(std::min(w, h - 20), h - 20);
+            trashPlugin->setFixedSize(qBound(20, w, h), h);
     }
 
     // 插件和托盘
@@ -253,17 +255,17 @@ void MainPanelControl::calcuDockIconSize(int w, int h, PluginsItem *trashPlugin,
 
         // 插件
         if (shutdownPlugin)
-            shutdownPlugin->setFixedSize(tray_item_size, h - 20);
+            shutdownPlugin->setFixedSize(tray_item_size, h);
         if (keyboardPlugin)
-            keyboardPlugin->setFixedSize(tray_item_size, h - 20);
+            keyboardPlugin->setFixedSize(tray_item_size, h);
 
     } else {
         m_tray->centralWidget()->setProperty("iconSize", tray_item_size);
 
         if (shutdownPlugin)
-            shutdownPlugin->setFixedSize(w - 20, tray_item_size);
+            shutdownPlugin->setFixedSize(tray_item_size, tray_item_size);
         if (keyboardPlugin)
-            keyboardPlugin->setFixedSize(w - 20, tray_item_size);
+            keyboardPlugin->setFixedSize(tray_item_size, tray_item_size);
     }
 
     if ((m_position == Position::Top) || (m_position == Position::Bottom)) {
@@ -271,12 +273,15 @@ void MainPanelControl::calcuDockIconSize(int w, int h, PluginsItem *trashPlugin,
         for (int i = 0; i < m_pluginLayout->count(); ++ i) {
             PluginsItem *pItem = static_cast<PluginsItem *>(m_pluginLayout->itemAt(i)->widget());
             if (pItem != trashPlugin && pItem != shutdownPlugin && pItem != keyboardPlugin) {
+                // 部分插件（如 power）中心控件未实现 sizeHint，直接取 sizeHint().width() 会为 0，
+                // 拖动后会被压成 0 宽而消失，因此必须保证不小于最小尺寸。
+                int fixedW = qMax(qMax(pItem->sizeHint().width(), pItem->minimumWidth()), 20);
                 if (pItem->pluginName() == "datetime"){
-                    pItem->setFixedSize(pItem->sizeHint().width(), h);
+                    pItem->setFixedSize(fixedW, h);
                 } else if (pItem->pluginName() == "AiAssistant"){
-                    pItem->setFixedSize(tray_item_size, h - 20);
+                    pItem->setFixedSize(tray_item_size, h);
                 } else {
-                    pItem->setFixedSize(pItem->sizeHint().width(), h);
+                    pItem->setFixedSize(fixedW, h);
                 }
             }
         }
@@ -285,12 +290,13 @@ void MainPanelControl::calcuDockIconSize(int w, int h, PluginsItem *trashPlugin,
         for (int i = 0; i < m_pluginLayout->count(); ++ i) {
             PluginsItem *pItem = static_cast<PluginsItem *>(m_pluginLayout->itemAt(i)->widget());
             if (pItem != trashPlugin && pItem != shutdownPlugin && pItem != keyboardPlugin) {
+                int fixedH = qMax(qMax(pItem->sizeHint().height(), pItem->minimumHeight()), 20);
                 if (pItem->pluginName() == "datetime"){
-                    pItem->setFixedSize(w, pItem->sizeHint().height());
+                    pItem->setFixedSize(w, fixedH);
                 } else if (pItem->pluginName() == "AiAssistant"){
-                    pItem->setFixedSize(w - 20, tray_item_size);
+                    pItem->setFixedSize(tray_item_size, tray_item_size);
                 } else {
-                    pItem->setFixedSize(w, pItem->sizeHint().height());
+                    pItem->setFixedSize(w, fixedH);
                 }
             }
         }
