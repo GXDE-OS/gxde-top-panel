@@ -75,19 +75,32 @@ MainWindow::MainWindow(QScreen *screen, bool enableBlacklist, QWidget *parent)
 //    this->windowHandle()->setScreen(screen);
     this->adjustPosition();
 
-    setVisible(true);
-    m_platformWindowHandle.setTranslucentBackground(true);
-    m_platformWindowHandle.setEnableBlurWindow(true);
-    m_platformWindowHandle.setWindowRadius(0);
     if (!m_isWayland) {
+        // DPlatformWindowHandle changes DXCB window properties.  Applying
+        // these properties to an already-created Wayland layer surface can
+        // leave Qt's backing store without a drawable surface.
+        m_platformWindowHandle.setTranslucentBackground(true);
+        m_platformWindowHandle.setEnableBlurWindow(true);
+        m_platformWindowHandle.setWindowRadius(0);
         m_platformWindowHandle.setShadowOffset(QPoint(0, 5));
         m_platformWindowHandle.setShadowColor(QColor(0, 0, 0, 0.3 * 255));
         m_platformWindowHandle.setBorderWidth(1);
+    } else {
+        // Keep DBlurEffectWidget in its normal paint mode.  Compositor-side
+        // blur is requested separately below.
+        // The compositor's personalization protocol owns the actual
+        // top-level corner mask, so set it before the surface is mapped.
+        // gxde-wlcom currently treats zero as "use the compositor default".
+        // One is the smallest accepted override and is visually square.
+        m_platformWindowHandle.setWindowRadius(1);
+        setRadius(0);
+        setBlurRectXRadius(0);
+        setBlurRectYRadius(0);
+        setBlurEnabled(true);
     }
 
-    setBlendMode(DBlurEffectWidget::BehindWindowBlend);
-    setFull(true);
-    setBlurEnabled(true);
+    applyCustomSettings(*CustomSettings::instance());
+    setVisible(true);
 
     // KWin-compatible compositors expose blur through KWindowEffects instead
     // of the Treeland personalization protocol.  Registering both is safe and
@@ -96,9 +109,6 @@ MainWindow::MainWindow(QScreen *screen, bool enableBlacklist, QWidget *parent)
         KWindowEffects::enableBlurBehind(windowHandle(), true);
     }
 
-
-    qreal value = CustomSettings::instance()->getPanelOpacity();
-    CustomSettings::instance()->setPanelOpacity(value);
 
     connect(DGuiApplicationHelper::instance(), &DGuiApplicationHelper::themeTypeChanged, this, [this] () {
         this->applyCustomSettings(*CustomSettings::instance());
@@ -341,6 +351,14 @@ void MainWindow::moveToScreen(QScreen *screen) {
 }
 
 void MainWindow::setRaidus(int radius) {
+    if (m_isWayland) {
+        m_platformWindowHandle.setWindowRadius(radius == 0 ? 1 : radius);
+        setRadius(radius);
+        setBlurRectXRadius(radius);
+        setBlurRectYRadius(radius);
+        return;
+    }
+
     m_platformWindowHandle.setWindowRadius(radius);
 }
 

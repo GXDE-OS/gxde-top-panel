@@ -27,9 +27,12 @@ QT_END_NAMESPACE
 namespace {
 
 constexpr int MenuRadius = 8;
-constexpr int ShadowMargin = 18;
+// The Treeland personalization protocol blurs the complete Wayland surface.
+// Keep that surface tight to the menu so the blur cannot extend past it.
+constexpr int ShadowMargin = 0;
 constexpr int ShadowBlur = 7;
 constexpr int ShadowOffsetY = 3;
+constexpr qreal MenuBackgroundOpacity = 0.72;
 constexpr auto PlatformHandleName = "wayland-menu-platform-handle";
 constexpr auto LayerXProperty = "gxde-wayland-menu-layer-x";
 constexpr auto LayerYProperty = "gxde-wayland-menu-layer-y";
@@ -98,7 +101,7 @@ private:
         painter->restore();
 
         QColor background = widget->palette().color(QPalette::Window);
-        background.setAlphaF(0.88);
+        background.setAlphaF(MenuBackgroundOpacity);
         painter->setRenderHint(QPainter::Antialiasing);
         painter->fillPath(panelPath, background);
         painter->strokePath(panelPath, QPen(QColor(0, 0, 0, 20), 1));
@@ -195,6 +198,9 @@ void updateEffects(QMenu *menu)
         handle->setObjectName(QString::fromLatin1(PlatformHandleName));
     }
     handle->setTranslucentBackground(true);
+    handle->setWindowRadius(MenuRadius);
+    handle->setShadowRadius(0);
+    handle->setBorderWidth(0);
 
     // The DTK/UKUI protocol blurs the whole surface, so configure() commits
     // the popup's real size before enabling it.  On KWin-compatible
