@@ -31,6 +31,10 @@
 <context>
     <name>MainSettingWidget</name>
     <message>
+        <source>Use dark DTK panel</source>
+        <translation>使用深色DTK面板</translation>
+    </message>
+    <message>
         <location filename="../widgets/mainsettingwidget.ui" line="14"/>
         <source>GXDE Top Panel Settings</source>
         <translation>GXDE Top Panel 设置</translation>

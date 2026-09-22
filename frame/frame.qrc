@@ -4,8 +4,11 @@
     </qresource>
     <qresource prefix="/icons">
         <file alias="close.svg">resources/icons/close.svg</file>
+        <file alias="close-dark.svg">resources/icons/close-dark.svg</file>
         <file alias="maximum.svg">resources/icons/maximum.svg</file>
+        <file alias="maximum-dark.svg">resources/icons/maximum-dark.svg</file>
         <file alias="minimum.svg">resources/icons/minimum.svg</file>
+        <file alias="minimum-dark.svg">resources/icons/minimum-dark.svg</file>
         <file alias="linux.svg">resources/icons/linux.svg</file>
         <file alias="linux-light.svg">resources/icons/linux-light.svg</file>
         <file alias="reset.svg">resources/icons/reset.svg</file>

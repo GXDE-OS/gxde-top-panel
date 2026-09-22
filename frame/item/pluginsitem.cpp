@@ -23,6 +23,7 @@
 #include "pluginsitem.h"
 #include "pluginsiteminterface.h"
 #include "utils.h"
+#include "panelforegroundeffect.h"
 #include <QPainter>
 #include <QBoxLayout>
 #include <QMouseEvent>
@@ -49,6 +50,7 @@ PluginsItem::PluginsItem(PluginsItemInterface *const pluginInter, const QString 
     m_centralWidget->setVisible(true);
     m_centralWidget->setObjectName(pluginInter->pluginName() + "-centralwidget");
     m_centralWidget->installEventFilter(this);
+    m_centralWidget->setGraphicsEffect(new PanelForegroundEffect(m_centralWidget));
 
     QBoxLayout *hLayout = new QHBoxLayout;
     hLayout->addWidget(m_centralWidget);
@@ -116,6 +118,9 @@ QSize PluginsItem::sizeHint() const
 void PluginsItem::refreshIcon()
 {
     m_pluginInter->refreshIcon(m_itemKey);
+    m_centralWidget->update();
+    if (m_centralWidget->graphicsEffect())
+        m_centralWidget->graphicsEffect()->update();
 }
 
 void PluginsItem::onGSettingsChanged(const QString &key)

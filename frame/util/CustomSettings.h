@@ -99,10 +99,18 @@ public:
 
 signals:
     void settingsChanged();
+    void panelThemeChanged();
+
+private slots:
+    void reloadSettings(const QString &fileName);
 
 private:
     CustomSettings();
     QString getConfigPath();    
+    void applyPanelTheme();
+    bool useDarkDtkPanel = false;
+    bool reloadingSettings = false;
+    QString systemIconTheme;
 
 private:
     int panelHeight;
@@ -136,6 +144,9 @@ public:
     bool isFollowSystemTheme() const;
 
     void setFollowSystemTheme(bool followSystemTheme);
+
+    bool isUseDarkDtkPanel() const;
+    void setUseDarkDtkPanel(bool enabled);
 
 public:
     bool isHideTitleWhenMax() const;

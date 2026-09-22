@@ -28,6 +28,8 @@
 #include <QGSettings>
 
 #include <DApplication>
+#include <DGuiApplicationHelper>
+#include "CustomSettings.h"
 
 DockItemManager *DockItemManager::INSTANCE = nullptr;
 
@@ -50,6 +52,12 @@ DockItemManager::DockItemManager(QObject *parent)
     if (app) {
         connect(app, &DApplication::iconThemeChanged, this, &DockItemManager::refreshItemsIcon);
     }
+
+    connect(Dtk::Gui::DGuiApplicationHelper::instance(),
+            &Dtk::Gui::DGuiApplicationHelper::themeTypeChanged,
+            this, &DockItemManager::refreshItemsIcon, Qt::QueuedConnection);
+    connect(CustomSettings::instance(), &CustomSettings::panelThemeChanged,
+            this, &DockItemManager::refreshItemsIcon, Qt::QueuedConnection);
 
     connect(qApp, &QApplication::aboutToQuit, this, &QObject::deleteLater);
 

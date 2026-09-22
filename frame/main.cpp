@@ -55,7 +55,10 @@ int main(int argc, char *argv[]) {
     QString locale = QLocale::system().name();
 
     QTranslator translator;
-    translator.load("/usr/share/gxde-top-panel/translations/gxde-top-panel_"+ locale +".qm");
+    const QString translationName = "gxde-top-panel_" + locale + ".qm";
+    if (!translator.load(translationName, app.applicationDirPath() + "/../translations")) {
+        translator.load(translationName, "/usr/share/gxde-top-panel/translations");
+    }
     app.installTranslator(&translator);
 
     app.setOrganizationName("GXDE");
@@ -77,6 +80,9 @@ int main(int argc, char *argv[]) {
     if (!app.setSingleInstance(instanceKey)) {
         return 0;
     }
+
+    // Apply the saved application theme before creating any plugin widgets.
+    CustomSettings::instance();
 
     if (settingsMode) {
         MainSettingWidget settingsWidget;

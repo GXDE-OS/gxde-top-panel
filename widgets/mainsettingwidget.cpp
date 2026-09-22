@@ -2,6 +2,7 @@
 #include "ui_mainsettingwidget.h"
 #include "../frame/util/CustomSettings.h"
 #include <QIcon>
+#include <QSignalBlocker>
 #include <QColorDialog>
 #include <QFileDialog>
 #include <QMovie>
@@ -52,6 +53,20 @@ MainSettingWidget::MainSettingWidget(QWidget *parent) :
     ui->hideTitlebarCheckBox->setChecked(CustomSettings::instance()->isHideTitleWhenMax());
 
     ui->followSystemThemeCheckBox->setChecked(CustomSettings::instance()->isFollowSystemTheme());
+    ui->useDarkDtkPanelCheckBox->setChecked(CustomSettings::instance()->isUseDarkDtkPanel());
+    connect(ui->useDarkDtkPanelCheckBox, &QCheckBox::toggled,
+            CustomSettings::instance(), &CustomSettings::setUseDarkDtkPanel);
+    connect(CustomSettings::instance(), &CustomSettings::settingsChanged, this, [this] {
+        const auto *settings = CustomSettings::instance();
+        const QSignalBlocker blocker(ui->useDarkDtkPanelCheckBox);
+        ui->useDarkDtkPanelCheckBox->setChecked(settings->isUseDarkDtkPanel());
+        ui->panelColorlabel->setStyleSheet(QString("QLabel {background-color: %1;}").arg(settings->getPanelBgColor().name()));
+        ui->fontColorLabel->setStyleSheet(QString("QLabel {background-color: %1;}").arg(settings->getActiveFontColor().name()));
+        ui->defaultIconLabel->setPixmap(QIcon(settings->getActiveDefaultAppIconPath()).pixmap(ui->defaultIconLabel->size()));
+        ui->closeButtonLabel->setPixmap(QIcon(settings->getActiveCloseIconPath()).pixmap(ui->closeButtonLabel->size()));
+        ui->unmaxButtonLabel->setPixmap(QIcon(settings->getActiveUnmaximizedIconPath()).pixmap(ui->unmaxButtonLabel->size()));
+        ui->minButtonLabel->setPixmap(QIcon(settings->getActiveMinimizedIconPath()).pixmap(ui->minButtonLabel->size()));
+    });
 
     connect(ui->opacitySpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &MainSettingWidget::opacityValueChanged);
     connect(ui->panelColorToolButton, &QToolButton::clicked, this, &MainSettingWidget::panelColorButtonClicked);

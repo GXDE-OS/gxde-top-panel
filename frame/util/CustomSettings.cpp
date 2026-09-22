@@ -5,10 +5,23 @@
 #include "CustomSettings.h"
 #include <QSettings>
 #include <QDir>
+#include <QFileInfo>
+#include <QFileSystemWatcher>
+#include <QIcon>
+#include <QScopedValueRollback>
+#include <QDBusConnection>
+#include <QDBusMessage>
+#include <QTimer>
+#include <DPlatformTheme>
 #include <DGuiApplicationHelper>
 #include <DSysInfo>
 
 DGUI_USE_NAMESPACE
+
+namespace {
+constexpr auto SettingsObjectPath = "/com/gxde/TopPanel/Settings";
+constexpr auto SettingsInterface = "com.gxde.TopPanel.Settings";
+}
 
 CustomSettings::CustomSettings() {
     this->defaultIconPathLight = ":/icons/linux.svg";
@@ -39,8 +52,48 @@ CustomSettings::CustomSettings() {
     this->defaultDarkColor = Qt::black;
     this->defaultLightColor = Qt::white;
 
+    systemIconTheme = QIcon::themeName();
     this->readSettings();
     connect(this, &CustomSettings::settingsChanged, this, &CustomSettings::saveSettings);
+    connect(DGuiApplicationHelper::instance()->applicationTheme(),
+            &DPlatformTheme::iconThemeNameChanged, this, [this](const QByteArray &name) {
+        systemIconTheme = QString::fromUtf8(name);
+        applyPanelTheme();
+    });
+
+    // The Wayland settings window is a separate, long-lived process. Notify
+    // the panel only after QSettings has committed the new values to disk.
+    QDBusConnection::sessionBus().connect(QString(), SettingsObjectPath,
+        SettingsInterface, "Changed", this, SLOT(reloadSettings(QString)));
+
+    // Also handle external edits, both in-place writes and atomic replacement.
+    const QString fileName = QSettings("dde-top-panel", "top-panel").fileName();
+    const QString directory = QFileInfo(fileName).absolutePath();
+    QDir().mkpath(directory);
+    auto *watcher = new QFileSystemWatcher(this);
+    watcher->addPath(directory);
+    if (QFileInfo::exists(fileName))
+        watcher->addPath(fileName);
+    auto *reloadTimer = new QTimer(this);
+    reloadTimer->setSingleShot(true);
+    reloadTimer->setInterval(25);
+    connect(watcher, &QFileSystemWatcher::directoryChanged, reloadTimer,
+            [reloadTimer] { reloadTimer->start(); });
+    connect(watcher, &QFileSystemWatcher::fileChanged, reloadTimer,
+            [reloadTimer] { reloadTimer->start(); });
+    connect(reloadTimer, &QTimer::timeout, this, [this, watcher, fileName] {
+        if (!watcher->files().contains(fileName) && QFileInfo::exists(fileName))
+            watcher->addPath(fileName);
+        reloadSettings(fileName);
+    });
+}
+
+void CustomSettings::reloadSettings(const QString &fileName) {
+    if (fileName != QSettings("dde-top-panel", "top-panel").fileName())
+        return;
+    QScopedValueRollback<bool> reloading(reloadingSettings, true);
+    readSettings();
+    emit settingsChanged();
 }
 
 CustomSettings *CustomSettings::instance() {
@@ -49,7 +102,7 @@ CustomSettings *CustomSettings::instance() {
 }
 
 qreal CustomSettings::getPanelOpacity() const {
-    if (this->isFollowSystemTheme()) {
+    if (this->isUseDarkDtkPanel() || this->isFollowSystemTheme()) {
         return 80;
     } else {
         return panelOpacity;
@@ -62,7 +115,7 @@ void CustomSettings::setPanelOpacity(qreal panelOpacity) {
 }
 
 const QColor &CustomSettings::getPanelBgColor() const {
-    if (this->isFollowSystemTheme()) {
+    if (this->isUseDarkDtkPanel() || this->isFollowSystemTheme()) {
         switch (DGuiApplicationHelper::instance()->themeType()) {
             case Dtk::Gui::DGuiApplicationHelper::DarkType:
                 return this->defaultDarkColor;
@@ -88,15 +141,8 @@ void CustomSettings::setPanelEnablePluginsOnAllScreen(bool panelEnablePluginsOnA
 }
 
 const QColor &CustomSettings::getActiveFontColor() const {
-    if (this->isFollowSystemTheme()) {
-        switch (DGuiApplicationHelper::instance()->themeType()) {
-            case Dtk::Gui::DGuiApplicationHelper::DarkType:
-                return this->defaultLightColor;
-            case Dtk::Gui::DGuiApplicationHelper::LightType:
-                return this->defaultDarkColor;
-        }
-    }
-    return activeFontColor;
+    return DGuiApplicationHelper::instance()->themeType() == DGuiApplicationHelper::DarkType
+        ? defaultLightColor : defaultDarkColor;
 }
 
 void CustomSettings::setActiveFontColor(const QColor &activeFontColor) {
@@ -114,6 +160,11 @@ void CustomSettings::setActiveFont(const QFont &activeFont) {
 }
 
 const QString &CustomSettings::getActiveCloseIconPath() const {
+    static const QString lightIcon = QStringLiteral(":/icons/close.svg");
+    static const QString darkIcon = QStringLiteral(":/icons/close-dark.svg");
+    if (activeCloseIconPath == lightIcon || activeCloseIconPath == darkIcon)
+        return DGuiApplicationHelper::instance()->themeType() == DGuiApplicationHelper::DarkType
+            ? lightIcon : darkIcon;
     return activeCloseIconPath;
 }
 
@@ -123,6 +174,11 @@ void CustomSettings::setActiveCloseIconPath(const QString &activeCloseIconPath) 
 }
 
 const QString &CustomSettings::getActiveUnmaximizedIconPath() const {
+    static const QString lightIcon = QStringLiteral(":/icons/maximum.svg");
+    static const QString darkIcon = QStringLiteral(":/icons/maximum-dark.svg");
+    if (activeUnmaximizedIconPath == lightIcon || activeUnmaximizedIconPath == darkIcon)
+        return DGuiApplicationHelper::instance()->themeType() == DGuiApplicationHelper::DarkType
+            ? lightIcon : darkIcon;
     return activeUnmaximizedIconPath;
 }
 
@@ -132,6 +188,11 @@ void CustomSettings::setActiveUnmaximizedIconPath(const QString &activeUnmaximiz
 }
 
 const QString &CustomSettings::getActiveMinimizedIconPath() const {
+    static const QString lightIcon = QStringLiteral(":/icons/minimum.svg");
+    static const QString darkIcon = QStringLiteral(":/icons/minimum-dark.svg");
+    if (activeMinimizedIconPath == lightIcon || activeMinimizedIconPath == darkIcon)
+        return DGuiApplicationHelper::instance()->themeType() == DGuiApplicationHelper::DarkType
+            ? lightIcon : darkIcon;
     return activeMinimizedIconPath;
 }
 
@@ -141,7 +202,7 @@ void CustomSettings::setActiveMinimizedIconPath(const QString &activeMinimizedIc
 }
 
 const QString &CustomSettings::getActiveDefaultAppIconPath() const {
-    if (this->isFollowSystemTheme() && activeDefaultAppIconPath == ":/icons/linux.svg") {
+    if (activeDefaultAppIconPath == defaultIconPathLight || activeDefaultAppIconPath == defaultIconPathDark) {
         switch (DGuiApplicationHelper::instance()->themeType()) {
             case Dtk::Gui::DGuiApplicationHelper::DarkType: 
                 return this->defaultIconPathDark;
@@ -223,16 +284,20 @@ void CustomSettings::setShowGlobalMenuOnHover(bool showGlobalMenuOnHover) {
 }
 
 void CustomSettings::saveSettings() {
+    if (reloadingSettings)
+        return;
+
     QSettings settings("dde-top-panel", "top-panel");
 
-    settings.setValue("panel/bgColor", this->getPanelBgColor());
-    settings.setValue("panel/opacity", this->getPanelOpacity());
+    settings.setValue("panel/bgColor", this->panelBgColor);
+    settings.setValue("panel/opacity", this->panelOpacity);
     settings.setValue("panel/followSystemTheme", this->isFollowSystemTheme());
-    settings.setValue("windowControl/fontColor", this->getActiveFontColor());
-    settings.setValue("windowControl/closeIcon", this->getActiveCloseIconPath());
-    settings.setValue("windowControl/unmaxIcon", this->getActiveUnmaximizedIconPath());
-    settings.setValue("windowControl/minIcon", this->getActiveMinimizedIconPath());
-    settings.setValue("windowControl/defaultIcon", this->getActiveDefaultAppIconPath());
+    settings.setValue("panel/useDarkDtkPanel", useDarkDtkPanel);
+    settings.setValue("windowControl/fontColor", this->activeFontColor);
+    settings.setValue("windowControl/closeIcon", this->activeCloseIconPath);
+    settings.setValue("windowControl/unmaxIcon", this->activeUnmaximizedIconPath);
+    settings.setValue("windowControl/minIcon", this->activeMinimizedIconPath);
+    settings.setValue("windowControl/defaultIcon", this->activeDefaultAppIconPath);
     settings.setValue("windowControl/showMenuOnHover", this->isShowGlobalMenuOnHover());
     settings.setValue("windowControl/showControlButtons", this->isShowControlButtons());
     settings.setValue("windowControl/showAppNameInsteadIcon", this->isShowAppNameInsteadIcon());
@@ -243,12 +308,21 @@ void CustomSettings::saveSettings() {
     settings.setValue("windowControl/buttonHighlightColor", this->buttonHighLightColor);
     settings.setValue("windowControl/allowDragWindowWhenMax", this->allowDragWindowWhenMax);
 
+    settings.sync();
+    if (settings.status() == QSettings::NoError) {
+        QDBusMessage notification = QDBusMessage::createSignal(
+            SettingsObjectPath, SettingsInterface, "Changed");
+        notification << settings.fileName();
+        QDBusConnection::sessionBus().send(notification);
+    }
+
     QSettings kwinrc(getConfigPath(), QSettings::IniFormat);
     kwinrc.setValue("Windows/BorderlessMaximizedWindows", this->hideTitleWhenMax);
 }
 
 void CustomSettings::readSettings() {
     QSettings settings("dde-top-panel", "top-panel");
+    settings.sync();
     this->panelBgColor = settings.value("panel/bgColor", this->panelBgColor).value<QColor>();
     this->panelOpacity = settings.value("panel/opacity", this->panelOpacity).toUInt();
     this->activeFontColor = settings.value("windowControl/fontColor", this->activeFontColor).value<QColor>();
@@ -266,10 +340,12 @@ void CustomSettings::readSettings() {
     this->buttonHighlight = settings.value("windowControl/enableButtonHighlight", this->isButtonHighlight()).toBool();
     this->buttonHighLightColor = settings.value("windowControl/buttonHighlightColor", this->buttonHighLightColor).value<QColor>();
     this->followSystemTheme = settings.value("panel/followSystemTheme", this->isFollowSystemTheme()).toBool();
+    useDarkDtkPanel = settings.value("panel/useDarkDtkPanel", false).toBool();
     this->allowDragWindowWhenMax = settings.value("windowControl/allowDragWindowWhenMax", this->allowDragWindowWhenMax).toBool();
 
     QSettings kwinrc(getConfigPath(), QSettings::IniFormat);
     this->hideTitleWhenMax = kwinrc.value("Windows/BorderlessMaximizedWindows", false).toBool();
+    applyPanelTheme();
 }
 
 bool CustomSettings::isShowControlButtons() const {
@@ -354,6 +430,7 @@ bool CustomSettings::isFollowSystemTheme() const {
 
 void CustomSettings::setFollowSystemTheme(bool followSystemTheme) {
     CustomSettings::followSystemTheme = followSystemTheme;
+    applyPanelTheme();
     emit settingsChanged();
 }
 
@@ -375,4 +452,30 @@ QString CustomSettings::getConfigPath() {
         configPath += "/.config/deepin-kwinrc";
     }
     return configPath;
+}
+
+bool CustomSettings::isUseDarkDtkPanel() const {
+    return useDarkDtkPanel;
+}
+
+void CustomSettings::setUseDarkDtkPanel(bool enabled) {
+    if (useDarkDtkPanel == enabled)
+        return;
+    useDarkDtkPanel = enabled;
+    applyPanelTheme();
+    emit settingsChanged();
+}
+
+void CustomSettings::applyPanelTheme() {
+    auto *helper = DGuiApplicationHelper::instance();
+    helper->setPaletteType(useDarkDtkPanel ? DGuiApplicationHelper::DarkType
+                                         : (followSystemTheme ? DGuiApplicationHelper::UnknownType
+                                                              : DGuiApplicationHelper::LightType));
+    // Set the process-local icon theme so plugins using QIcon::fromTheme also
+    // select the dark variants, without changing the desktop's icon theme.
+    const QString iconTheme = useDarkDtkPanel ? QStringLiteral("gxde-dark") : systemIconTheme;
+    if (QIcon::themeName() != iconTheme) {
+        QIcon::setThemeName(iconTheme);
+        emit panelThemeChanged();
+    }
 }

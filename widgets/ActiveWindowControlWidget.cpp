@@ -537,6 +537,23 @@ void ActiveWindowControlWidget::applyCustomSettings(const CustomSettings& settin
     } else {
         this->m_iconLabel->show();
         this->m_appNameLabel->hide();
+        // Refresh the fallback logo even when the active window does not
+        // change. Otherwise it keeps the previous theme's cached pixmap.
+        if (m_isWayland) {
+            const auto info = WaylandWindowManager::instance()->activeWindow();
+            QIcon icon;
+            if (info.valid && (!screen() || info.geometry.isNull()
+                || screen()->geometry().intersects(info.geometry))) {
+                icon = QIcon::fromTheme(info.iconName);
+                if (icon.isNull())
+                    icon = QIcon::fromTheme(QFileInfo(info.appId).completeBaseName());
+            }
+            m_iconLabel->setPixmap(icon.isNull()
+                ? QPixmap(settings.getActiveDefaultAppIconPath())
+                : icon.pixmap(m_iconLabel->size()));
+        } else {
+            m_iconLabel->setPixmap(XUtils::getWindowIconNameX11(currActiveWinId));
+        }
     }
 }
 
