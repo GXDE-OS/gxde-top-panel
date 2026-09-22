@@ -576,7 +576,11 @@ void ActiveWindowControlWidget::applyCustomSettings(const CustomSettings& settin
         if (m_newUi) {
             m_indicatorLayout->addWidget(m_appNameLabel);
             m_indicatorLayout->addWidget(m_winTitleLabel);
+            m_layout->removeWidget(m_buttonWidget);
+            m_layout->insertWidget(m_layout->indexOf(m_indicatorWidget) + 1, m_buttonWidget);
         } else {
+            m_layout->removeWidget(m_buttonWidget);
+            m_layout->insertWidget(1, m_buttonWidget);
             m_layout->insertWidget(m_layout->indexOf(m_menuWidget), m_appNameLabel);
             m_layout->insertWidget(m_layout->indexOf(m_menuWidget) + 1, m_winTitleLabel);
         }
@@ -756,6 +760,7 @@ bool ActiveWindowControlWidget::isMenuShown() {
 
 void ActiveWindowControlWidget::setMenuVisible(bool visible) {
     if (m_newUi) {
+        m_indicatorLayout->setContentsMargins(12, 0, 0, 0);
         QString title = currActiveWinTitle.trimmed();
         const QString displayName = m_appNameLabel->text().trimmed();
         QStringList applicationNames = m_applicationNames;

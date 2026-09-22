@@ -5,20 +5,22 @@
 #include "QOperationWidget.h"
 #include "util/CustomSettings.h"
 
+namespace {
+constexpr int ControlButtonSize = 20;
+}
+
 QOperationWidget::QOperationWidget(bool leftSide, QWidget *parent)
-    : QWidget(parent)
-{
-    int buttonSize = CustomSettings::instance()->getPanelHeight() - 4;
+        : QWidget(parent) {
+    const int buttonSize = ControlButtonSize;
 
     this->m_layout = new QHBoxLayout(this);
-    this->m_layout->setContentsMargins(0, 1, 0, 1);
+    this->m_layout->setContentsMargins(2, 1, 2, 1);
     this->m_layout->setSpacing(0);
 
     this->wrapLabel = new QLabel(this);
     this->wrapLayout = new QHBoxLayout(this->wrapLabel);
-    this->wrapLayout->setContentsMargins(0, 0, 0, 0);
+    this->wrapLayout->setContentsMargins(6, 0, 6, 0);
     this->wrapLayout->setSpacing(5);
-    this->wrapLayout->setContentsMargins(0, 0, 0, 0);
 
 
     this->closeButton = new QToolButton(this->wrapLabel);
@@ -48,11 +50,12 @@ QOperationWidget::QOperationWidget(bool leftSide, QWidget *parent)
         this->wrapLayout->addWidget(this->maxButton);
         this->wrapLayout->addWidget(this->closeButton);
     }
-    this->m_layout->addWidget(this->wrapLabel);
+    this->m_layout->addWidget(this->wrapLabel, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    this->wrapLabel->setFixedHeight(buttonSize + 2);
     this->wrapLabel->setFixedWidth(3 * buttonSize + 22);
 
     this->m_buttonShowAnimation = new QPropertyAnimation(this, "maximumWidth");
-    this->m_buttonShowAnimation->setEndValue(this->width());
+    this->m_buttonShowAnimation->setEndValue(this->wrapLabel->width() + 4);
     this->m_buttonShowAnimation->setDuration(150);
     connect(this->m_buttonShowAnimation, &QAbstractAnimation::finished, this, [this] {
         Q_EMIT animationFinished();
@@ -70,26 +73,29 @@ QOperationWidget::QOperationWidget(bool leftSide, QWidget *parent)
 void QOperationWidget::hideWithAnimation() {
     if (!this->isVisible()) return;
 
+    this->m_buttonShowAnimation->stop();
     this->m_buttonHideAnimation->setStartValue(this->width());
     this->m_buttonHideAnimation->start();
 }
 
 void QOperationWidget::showWithAnimation() {
-    if (this->isVisible()) return;
+    if (this->isVisible() && m_buttonHideAnimation->state() == QAbstractAnimation::Stopped) return;
 
+    this->m_buttonHideAnimation->stop();
     this->show();
     this->m_buttonShowAnimation->setStartValue(this->width());
     this->m_buttonShowAnimation->start();
 }
 
 void QOperationWidget::applyCustomSettings(const CustomSettings &settings) {
-    const int buttonSize = settings.getPanelHeight() - 4;
+    const int buttonSize = ControlButtonSize;
     for (auto *button : {closeButton, maxButton, minButton}) {
         button->setFixedSize(buttonSize, buttonSize);
         button->setIconSize(QSize(buttonSize - 6, buttonSize - 6));
     }
-    const int targetWidth = 3 * buttonSize + 22;
-    wrapLabel->setFixedWidth(targetWidth);
+    wrapLabel->setFixedWidth(3 * buttonSize + 22);
+    const int targetWidth = wrapLabel->width()
+        + m_layout->contentsMargins().left() + m_layout->contentsMargins().right();
     m_buttonShowAnimation->setEndValue(targetWidth);
     if (m_buttonShowAnimation->state() == QAbstractAnimation::Stopped
             && m_buttonHideAnimation->state() == QAbstractAnimation::Stopped) {
