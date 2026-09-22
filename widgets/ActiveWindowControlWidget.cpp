@@ -50,7 +50,7 @@ ActiveWindowControlWidget::ActiveWindowControlWidget(QWidget *parent)
 
     this->m_iconLabel = new QLabel(this);
     this->m_iconLabel->setFixedSize(18, 18);
-    this->m_iconLabel->setScaledContents(true);
+    this->m_iconLabel->setAlignment(Qt::AlignCenter);
     this->m_layout->addWidget(this->m_iconLabel);
 
     this->m_buttonWidget = new QOperationWidget(true, this);
@@ -536,7 +536,7 @@ void ActiveWindowControlWidget::updateWindowIcon()
 {
     const auto *settings = CustomSettings::instance();
     if (settings->isAlwaysUseDefaultIcon() || settings->isShowAppNameInsteadIcon()) {
-        m_iconLabel->setPixmap(QPixmap(settings->getActiveDefaultAppIconPath()));
+        setWindowIcon(QIcon(settings->getActiveDefaultAppIconPath()));
         return;
     }
     if (m_isWayland) {
@@ -548,15 +548,29 @@ void ActiveWindowControlWidget::updateWindowIcon()
             if (icon.isNull())
                 icon = QIcon::fromTheme(QFileInfo(info.appId).completeBaseName());
         }
-        m_iconLabel->setPixmap(icon.isNull()
-            ? QPixmap(settings->getActiveDefaultAppIconPath())
-            : icon.pixmap(m_iconLabel->size()));
+        setWindowIcon(icon.isNull() ? QIcon(settings->getActiveDefaultAppIconPath()) : icon);
     } else {
-        m_iconLabel->setPixmap(XUtils::getWindowIconNameX11(currActiveWinId));
+        setWindowIcon(QIcon(XUtils::getWindowIconNameX11(currActiveWinId)));
     }
 }
 
+void ActiveWindowControlWidget::setWindowIcon(const QIcon &icon)
+{
+    const qreal ratio = m_iconLabel->devicePixelRatioF();
+    // At fractional scaling, rounding 18 * 1.25 up to 23 can exceed the
+    // label's 22 physical pixels and clip its last row. Render a fitting
+    // pixmap directly, preserving aspect ratio and avoiding QLabel scaling.
+    const QSize pixels(qMax(1, qFloor(m_iconLabel->width() * ratio)),
+                       qMax(1, qFloor(m_iconLabel->height() * ratio)));
+    QPixmap pixmap = icon.pixmap(pixels, 1.0);
+    pixmap.setDevicePixelRatio(ratio);
+    m_iconLabel->setPixmap(pixmap);
+}
+
 bool ActiveWindowControlWidget::eventFilter(QObject *watched, QEvent *event) {
+    if (watched == this && event->type() == QEvent::DevicePixelRatioChange)
+        updateWindowIcon();
+
     auto *menu = qobject_cast<QMenu *>(watched);
     if (menu) {
         if (m_isWayland && event->type() == QEvent::Show) {

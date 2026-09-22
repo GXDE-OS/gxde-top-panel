@@ -70,6 +70,7 @@ private:
     bool isActiveWindowMaximized() const;
     void updateWaylandWindowInfo();
     void updateWindowIcon();
+    void setWindowIcon(const QIcon &icon);
     QString waylandApplicationName(const QString &appId, const QString &title) const;
 
 private slots:
