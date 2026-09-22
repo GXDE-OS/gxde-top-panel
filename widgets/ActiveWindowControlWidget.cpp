@@ -174,7 +174,7 @@ void ActiveWindowControlWidget::activeWindowInfoChanged() {
             if (newCurActiveWinId < 0) {
                 this->currActiveWinId = -1;
                 if (!CustomSettings::instance()->isShowAppNameInsteadIcon()) {
-                    this->m_iconLabel->setPixmap(QPixmap(CustomSettings::instance()->getActiveDefaultAppIconPath()));
+                    updateWindowIcon();
                     this->m_winTitleLabel->show();
                     this->m_winTitleLabel->setText(tr("Desktop"));
                 } else {
@@ -204,7 +204,7 @@ void ActiveWindowControlWidget::activeWindowInfoChanged() {
 
     if (!activeWinTitle.isEmpty()) {
         if (!CustomSettings::instance()->isShowAppNameInsteadIcon()) {
-            this->m_iconLabel->setPixmap(XUtils::getWindowIconNameX11(this->currActiveWinId));
+            updateWindowIcon();
         }
         this->m_appNameLabel->setText(XUtils::getWindowAppName(this->currActiveWinId));
     }
@@ -521,39 +521,38 @@ void ActiveWindowControlWidget::applyCustomSettings(const CustomSettings& settin
     this->m_buttonWidget->setVisible(CustomSettings::instance()->isButtonOnLeft() && CustomSettings::instance()->isShowControlButtons());
     this->m_buttonWidget->applyCustomSettings(settings);
 
-    // show icons or app name
+    // Icon selection is independent of the app-name and visibility settings.
     palette = this->m_appNameLabel->palette();
     palette.setColor(QPalette::WindowText, settings.getActiveFontColor());
     this->m_appNameLabel->setPalette(palette);
     this->m_appNameLabel->setFont(QFont(settings.getActiveFont().family(), settings.getActiveFont().pointSize(), QFont::DemiBold));
-    if (settings.isShowAppNameInsteadIcon()) {
-        if (settings.isShowLogoWithAppName()) {
-            this->m_iconLabel->show();
-            this->m_iconLabel->setPixmap(QPixmap(settings.getActiveDefaultAppIconPath()));
-        } else {
-            this->m_iconLabel->hide();
+    const bool showAppName = settings.isShowAppNameInsteadIcon();
+    m_iconLabel->setVisible(!showAppName || settings.isShowLogoWithAppName());
+    m_appNameLabel->setVisible(showAppName);
+    updateWindowIcon();
+}
+
+void ActiveWindowControlWidget::updateWindowIcon()
+{
+    const auto *settings = CustomSettings::instance();
+    if (settings->isAlwaysUseDefaultIcon() || settings->isShowAppNameInsteadIcon()) {
+        m_iconLabel->setPixmap(QPixmap(settings->getActiveDefaultAppIconPath()));
+        return;
+    }
+    if (m_isWayland) {
+        const auto info = WaylandWindowManager::instance()->activeWindow();
+        QIcon icon;
+        if (info.valid && (!screen() || info.geometry.isNull()
+            || screen()->geometry().intersects(info.geometry))) {
+            icon = QIcon::fromTheme(info.iconName);
+            if (icon.isNull())
+                icon = QIcon::fromTheme(QFileInfo(info.appId).completeBaseName());
         }
-        this->m_appNameLabel->show();
+        m_iconLabel->setPixmap(icon.isNull()
+            ? QPixmap(settings->getActiveDefaultAppIconPath())
+            : icon.pixmap(m_iconLabel->size()));
     } else {
-        this->m_iconLabel->show();
-        this->m_appNameLabel->hide();
-        // Refresh the fallback logo even when the active window does not
-        // change. Otherwise it keeps the previous theme's cached pixmap.
-        if (m_isWayland) {
-            const auto info = WaylandWindowManager::instance()->activeWindow();
-            QIcon icon;
-            if (info.valid && (!screen() || info.geometry.isNull()
-                || screen()->geometry().intersects(info.geometry))) {
-                icon = QIcon::fromTheme(info.iconName);
-                if (icon.isNull())
-                    icon = QIcon::fromTheme(QFileInfo(info.appId).completeBaseName());
-            }
-            m_iconLabel->setPixmap(icon.isNull()
-                ? QPixmap(settings.getActiveDefaultAppIconPath())
-                : icon.pixmap(m_iconLabel->size()));
-        } else {
-            m_iconLabel->setPixmap(XUtils::getWindowIconNameX11(currActiveWinId));
-        }
+        m_iconLabel->setPixmap(XUtils::getWindowIconNameX11(currActiveWinId));
     }
 }
 
@@ -806,8 +805,7 @@ void ActiveWindowControlWidget::updateWaylandWindowInfo()
         m_winTitleLabel->setText(currActiveWinTitle);
         m_appNameLabel->setText(tr("Desktop"));
         if (!CustomSettings::instance()->isShowAppNameInsteadIcon()) {
-            m_iconLabel->setPixmap(
-                QPixmap(CustomSettings::instance()->getActiveDefaultAppIconPath()));
+            updateWindowIcon();
         }
         m_appMenuModel->clearApplicationMenu();
         setMenuVisible(false);
@@ -819,18 +817,7 @@ void ActiveWindowControlWidget::updateWaylandWindowInfo()
     m_appNameLabel->setText(waylandApplicationName(info.appId, info.title));
     setButtonsVisible(info.maximized);
 
-    if (!CustomSettings::instance()->isShowAppNameInsteadIcon()) {
-        QIcon icon = QIcon::fromTheme(info.iconName);
-        if (icon.isNull()) {
-            icon = QIcon::fromTheme(QFileInfo(info.appId).completeBaseName());
-        }
-        if (icon.isNull()) {
-            m_iconLabel->setPixmap(
-                QPixmap(CustomSettings::instance()->getActiveDefaultAppIconPath()));
-        } else {
-            m_iconLabel->setPixmap(icon.pixmap(m_iconLabel->size()));
-        }
-    }
+    updateWindowIcon();
 
     if (!info.menuService.isEmpty() && !info.menuObjectPath.isEmpty()) {
         m_appMenuModel->updateApplicationMenu(info.menuService, info.menuObjectPath);

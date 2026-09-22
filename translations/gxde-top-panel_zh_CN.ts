@@ -31,6 +31,10 @@
 <context>
     <name>MainSettingWidget</name>
     <message>
+        <source>Always use default icon</source>
+        <translation>始终使用默认图标</translation>
+    </message>
+    <message>
         <source>Use dark DTK panel</source>
         <translation>使用深色DTK面板</translation>
     </message>

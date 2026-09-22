@@ -301,6 +301,7 @@ void CustomSettings::saveSettings() {
     settings.setValue("windowControl/showMenuOnHover", this->isShowGlobalMenuOnHover());
     settings.setValue("windowControl/showControlButtons", this->isShowControlButtons());
     settings.setValue("windowControl/showAppNameInsteadIcon", this->isShowAppNameInsteadIcon());
+    settings.setValue("windowControl/alwaysUseDefaultIcon", alwaysUseDefaultIcon);
     settings.setValue("windowControl/showLogoWithAppName", this->isShowLogoWithAppName());
     settings.setValue("windowControl/ignoreDock", this->isIgnoreDock());
     settings.setValue("windowControl/buttonOnRight", !this->isButtonOnLeft());
@@ -333,6 +334,7 @@ void CustomSettings::readSettings() {
     this->showGlobalMenuOnHover = settings.value("windowControl/showMenuOnHover", this->showGlobalMenuOnHover).toBool();
     this->showControlButtons = settings.value("windowControl/showControlButtons", this->showControlButtons).toBool();
     this->showAppNameInsteadIcon = settings.value("windowControl/showAppNameInsteadIcon", this->showAppNameInsteadIcon).toBool();
+    alwaysUseDefaultIcon = settings.value("windowControl/alwaysUseDefaultIcon", false).toBool();
     this->showLogoWithAppName = settings.value("windowControl/showLogoWithAppName", this->showLogoWithAppName).toBool();
     this->ignoreDock = settings.value("windowControl/ignoreDock", this->isIgnoreDock()).toBool();
     this->buttonOnLeft = !settings.value("windowControl/buttonOnRight", !this->isButtonOnLeft()).toBool();
@@ -368,6 +370,17 @@ void CustomSettings::setShowAppNameInsteadIcon(bool showAppNameInsteadIcon) {
 
 bool CustomSettings::isShowLogoWithAppName() const {
     return showLogoWithAppName;
+}
+
+bool CustomSettings::isAlwaysUseDefaultIcon() const {
+    return alwaysUseDefaultIcon;
+}
+
+void CustomSettings::setAlwaysUseDefaultIcon(bool enabled) {
+    if (alwaysUseDefaultIcon == enabled)
+        return;
+    alwaysUseDefaultIcon = enabled;
+    emit settingsChanged();
 }
 
 void CustomSettings::setShowLogoWithAppName(bool showLogoWithAppName) {

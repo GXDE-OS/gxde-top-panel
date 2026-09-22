@@ -69,6 +69,7 @@ private:
     int menuAvailableWidth();
     bool isActiveWindowMaximized() const;
     void updateWaylandWindowInfo();
+    void updateWindowIcon();
     QString waylandApplicationName(const QString &appId, const QString &title) const;
 
 private slots:

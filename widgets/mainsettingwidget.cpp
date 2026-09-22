@@ -45,6 +45,9 @@ MainSettingWidget::MainSettingWidget(QWidget *parent) :
     ui->pMovieLabel->setMovie(movie);
 
     ui->showAppNameCheckBox->setChecked(CustomSettings::instance()->isShowAppNameInsteadIcon());
+    ui->alwaysUseDefaultIconCheckBox->setChecked(CustomSettings::instance()->isAlwaysUseDefaultIcon());
+    connect(ui->alwaysUseDefaultIconCheckBox, &QCheckBox::toggled,
+            CustomSettings::instance(), &CustomSettings::setAlwaysUseDefaultIcon);
     ui->showButtonsCheckBox->setChecked(CustomSettings::instance()->isShowControlButtons());
     ui->showLogoWithAppNameCheckBox->setChecked(CustomSettings::instance()->isShowLogoWithAppName());
     ui->ignoreDockCheckBox->setChecked(CustomSettings::instance()->isIgnoreDock());
@@ -60,6 +63,8 @@ MainSettingWidget::MainSettingWidget(QWidget *parent) :
         const auto *settings = CustomSettings::instance();
         const QSignalBlocker blocker(ui->useDarkDtkPanelCheckBox);
         ui->useDarkDtkPanelCheckBox->setChecked(settings->isUseDarkDtkPanel());
+        const QSignalBlocker iconBlocker(ui->alwaysUseDefaultIconCheckBox);
+        ui->alwaysUseDefaultIconCheckBox->setChecked(settings->isAlwaysUseDefaultIcon());
         ui->panelColorlabel->setStyleSheet(QString("QLabel {background-color: %1;}").arg(settings->getPanelBgColor().name()));
         ui->fontColorLabel->setStyleSheet(QString("QLabel {background-color: %1;}").arg(settings->getActiveFontColor().name()));
         ui->defaultIconLabel->setPixmap(QIcon(settings->getActiveDefaultAppIconPath()).pixmap(ui->defaultIconLabel->size()));

@@ -60,6 +60,9 @@ public:
 
     void setShowAppNameInsteadIcon(bool showAppNameInsteadIcon);
 
+    bool isAlwaysUseDefaultIcon() const;
+    void setAlwaysUseDefaultIcon(bool enabled);
+
     void saveSettings();
     void readSettings();
 
@@ -123,6 +126,7 @@ private:
 
     bool showControlButtons;
     bool showAppNameInsteadIcon;
+    bool alwaysUseDefaultIcon = false;
     bool showLogoWithAppName;
 
     bool ignoreDock;
