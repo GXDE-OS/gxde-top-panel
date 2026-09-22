@@ -21,8 +21,46 @@
 #include <QLocale>
 #include <QRegularExpression>
 #include <QSettings>
+#include <QPainter>
+#include <KWindowInfo>
 #include <QStandardPaths>
 #include <iostream>
+
+namespace {
+constexpr int IndicatorTwoLineFontSize = 10;
+constexpr int IndicatorSingleLineFontSize = 14;
+
+// Keep long window titles from pushing plugins off the panel.
+class IndicatorLabel : public QLabel {
+public:
+    using QLabel::QLabel;
+    bool elide = false;
+
+    QSize sizeHint() const override {
+        QSize size = QLabel::sizeHint();
+        if (elide)
+            size.setWidth(qMin(size.width(), 320));
+        return size;
+    }
+
+    QSize minimumSizeHint() const override {
+        return elide ? QSize(0, sizeHint().height()) : QLabel::minimumSizeHint();
+    }
+
+protected:
+    void paintEvent(QPaintEvent *event) override {
+        if (!elide) {
+            QLabel::paintEvent(event);
+            return;
+        }
+        QPainter painter(this);
+        painter.setPen(palette().color(QPalette::WindowText));
+        painter.setFont(font());
+        painter.drawText(contentsRect(), alignment(),
+                         fontMetrics().elidedText(text(), Qt::ElideRight, contentsRect().width()));
+    }
+};
+}
 
 ActiveWindowControlWidget::ActiveWindowControlWidget(QWidget *parent)
     : QWidget(parent)
@@ -56,7 +94,8 @@ ActiveWindowControlWidget::ActiveWindowControlWidget(QWidget *parent)
     this->m_buttonWidget = new QOperationWidget(true, this);
     this->m_layout->addWidget(this->m_buttonWidget);
 
-    this->m_appNameLabel = new QLabel(this);
+    this->m_appNameLabel = new IndicatorLabel(this);
+    this->m_appNameLabel->setTextFormat(Qt::PlainText);
     this->m_appNameLabel->setFixedHeight(22);
     this->m_layout->addWidget(this->m_appNameLabel);
 
@@ -76,10 +115,22 @@ ActiveWindowControlWidget::ActiveWindowControlWidget(QWidget *parent)
     this->m_appMenuModel = new AppMenuModel(this);
     connect(this->m_appMenuModel, &AppMenuModel::modelNeedsUpdate, this, &ActiveWindowControlWidget::updateMenu);
 
-    this->m_winTitleLabel = new QLabel(this);
+    this->m_winTitleLabel = new IndicatorLabel(this);
+    this->m_winTitleLabel->setTextFormat(Qt::PlainText);
     this->m_winTitleLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     this->m_winTitleLabel->setContentsMargins(0, 4, 0, 4);
     this->m_layout->addWidget(this->m_winTitleLabel);
+
+    m_indicatorWidget = new QWidget(this);
+    m_indicatorWidget->setObjectName(QStringLiteral("appIndicator"));
+    m_indicatorWidget->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
+    m_indicatorLayout = new QVBoxLayout(m_indicatorWidget);
+    // Together with the new UI's 8px layout spacing, match the 20px left inset.
+    m_indicatorLayout->setContentsMargins(12, 0, 0, 0);
+    m_indicatorLayout->setSpacing(0);
+    m_indicatorLayout->setAlignment(Qt::AlignVCenter);
+    m_layout->insertWidget(2, m_indicatorWidget);
+    m_indicatorWidget->hide();
 
     this->m_layout->addStretch();
 
@@ -181,6 +232,10 @@ void ActiveWindowControlWidget::activeWindowInfoChanged() {
                     this->m_winTitleLabel->hide();
                 }
                 this->m_appNameLabel->setText(tr("Desktop"));
+                currActiveWinTitle = tr("Desktop");
+                m_applicationNames.clear();
+                if (m_newUi)
+                    setMenuVisible(false);
             } else {
                 activeWinId = newCurActiveWinId;
                 ifFoundPrevActiveWinId = true;
@@ -206,7 +261,14 @@ void ActiveWindowControlWidget::activeWindowInfoChanged() {
         if (!CustomSettings::instance()->isShowAppNameInsteadIcon()) {
             updateWindowIcon();
         }
-        this->m_appNameLabel->setText(XUtils::getWindowAppName(this->currActiveWinId));
+        KWindowInfo info(this->currActiveWinId, NET::WMName,
+                         NET::WM2DesktopFileName | NET::WM2WindowClass);
+        QString appId = info.desktopFileName();
+        if (appId.isEmpty())
+            appId = QString::fromUtf8(info.windowClassClass());
+        this->m_appNameLabel->setText(m_newUi
+            ? applicationDisplayName(appId, activeWinTitle)
+            : XUtils::getWindowAppName(this->currActiveWinId));
     }
 
     // KWindowSystem will not update menu for desktop when focusing on the desktop
@@ -232,6 +294,8 @@ void ActiveWindowControlWidget::activeWindowInfoChanged() {
     // some applications like KWrite will expose its global menu with an invalid dbus path
     //   thus we need to recheck it again :(
     this->m_appMenuModel->setWinId(this->currActiveWinId);
+    if (m_newUi)
+        setMenuVisible(!m_menuWidget->isHidden());
 }
 
 void ActiveWindowControlWidget::setButtonsVisible(bool visible) {
@@ -505,6 +569,28 @@ void ActiveWindowControlWidget::mouseMoveEvent(QMouseEvent *event) {
 }
 
 void ActiveWindowControlWidget::applyCustomSettings(const CustomSettings& settings) {
+    const bool layoutChanged = m_newUi != settings.isNewUiEnabled();
+    m_newUi = settings.isNewUiEnabled();
+    m_layout->setSpacing(m_newUi ? 8 : 16);
+    if (layoutChanged) {
+        if (m_newUi) {
+            m_indicatorLayout->addWidget(m_appNameLabel);
+            m_indicatorLayout->addWidget(m_winTitleLabel);
+        } else {
+            m_layout->insertWidget(m_layout->indexOf(m_menuWidget), m_appNameLabel);
+            m_layout->insertWidget(m_layout->indexOf(m_menuWidget) + 1, m_winTitleLabel);
+        }
+    }
+    m_indicatorWidget->setVisible(m_newUi);
+    static_cast<IndicatorLabel *>(m_appNameLabel)->elide = m_newUi;
+    static_cast<IndicatorLabel *>(m_winTitleLabel)->elide = m_newUi;
+    m_appNameLabel->setFixedHeight(m_newUi ? 12 : 22);
+    m_winTitleLabel->setContentsMargins(0, m_newUi ? 0 : 4, 0, m_newUi ? 0 : 4);
+    m_winTitleLabel->setMinimumHeight(m_newUi ? 16 : 0);
+    m_winTitleLabel->setMaximumHeight(m_newUi ? 16 : QWIDGETSIZE_MAX);
+    m_appNameLabel->setMaximumWidth(m_newUi ? 320 : QWIDGETSIZE_MAX);
+    m_winTitleLabel->setMaximumWidth(m_newUi ? 320 : QWIDGETSIZE_MAX);
+
     // title
     QPalette palette = this->m_winTitleLabel->palette();
     palette.setColor(QPalette::WindowText, settings.getActiveFontColor());
@@ -526,10 +612,23 @@ void ActiveWindowControlWidget::applyCustomSettings(const CustomSettings& settin
     palette.setColor(QPalette::WindowText, settings.getActiveFontColor());
     this->m_appNameLabel->setPalette(palette);
     this->m_appNameLabel->setFont(QFont(settings.getActiveFont().family(), settings.getActiveFont().pointSize(), QFont::DemiBold));
-    const bool showAppName = settings.isShowAppNameInsteadIcon();
+    if (m_newUi) {
+        QFont appFont = settings.getActiveFont();
+        appFont.setPixelSize(IndicatorTwoLineFontSize);
+        appFont.setBold(true);
+        m_appNameLabel->setFont(appFont);
+        QFont titleFont = settings.getActiveFont();
+        titleFont.setPixelSize(12);
+        titleFont.setBold(false);
+        m_winTitleLabel->setFont(titleFont);
+    }
+    const bool showAppName = m_newUi || settings.isShowAppNameInsteadIcon();
     m_iconLabel->setVisible(!showAppName || settings.isShowLogoWithAppName());
     m_appNameLabel->setVisible(showAppName);
     updateWindowIcon();
+    if (layoutChanged)
+        activeWindowInfoChanged();
+    organizeMenu();
 }
 
 void ActiveWindowControlWidget::updateWindowIcon()
@@ -656,6 +755,47 @@ bool ActiveWindowControlWidget::isMenuShown() {
 }
 
 void ActiveWindowControlWidget::setMenuVisible(bool visible) {
+    if (m_newUi) {
+        QString title = currActiveWinTitle.trimmed();
+        const QString displayName = m_appNameLabel->text().trimmed();
+        QStringList applicationNames = m_applicationNames;
+        applicationNames.prepend(m_appNameLabel->text());
+        for (const QString &name : applicationNames) {
+            const QString appName = name.trimmed();
+            if (appName.isEmpty())
+                continue;
+            // Only remove a trailing app name, never a dash within the title.
+            const QRegularExpression suffix(
+                QStringLiteral("\\s+[-\u2013\u2014]\\s+%1\\s*$").arg(QRegularExpression::escape(appName)),
+                QRegularExpression::CaseInsensitiveOption);
+            const auto match = suffix.match(title);
+            if (match.hasMatch() && !title.left(match.capturedStart()).trimmed().isEmpty()) {
+                title = title.left(match.capturedStart()).trimmed();
+                break;
+            }
+        }
+        m_winTitleLabel->setText(title);
+        const bool showMenu = visible && !buttonLabelListBak.isEmpty();
+        const bool showName = !displayName.isEmpty();
+        const bool showTitle = !showMenu && !title.isEmpty()
+            && (!showName || title.compare(displayName, Qt::CaseInsensitive) != 0);
+        const bool twoLines = showName && showTitle;
+        m_menuWidget->setVisible(showMenu);
+        m_winTitleLabel->setVisible(showTitle);
+        QFont appFont = m_appNameLabel->font();
+        appFont.setPixelSize(twoLines ? IndicatorTwoLineFontSize : IndicatorSingleLineFontSize);
+        m_appNameLabel->setFont(appFont);
+        m_appNameLabel->setFixedHeight(twoLines ? 12 : 22);
+        m_appNameLabel->setVisible(showName);
+        QFont titleFont = m_winTitleLabel->font();
+        titleFont.setPixelSize(twoLines ? 12 : IndicatorSingleLineFontSize);
+        m_winTitleLabel->setFont(titleFont);
+        m_winTitleLabel->setFixedHeight(twoLines ? 16 : 22);
+        m_indicatorWidget->setVisible(showName || showTitle);
+        m_appNameLabel->setToolTip(m_appNameLabel->text());
+        m_winTitleLabel->setToolTip(currActiveWinTitle);
+        return;
+    }
     this->m_winTitleLabel->setVisible(!visible && CustomSettings::instance()->isShowControlButtons());
     this->m_menuWidget->setVisible(visible);
 
@@ -764,9 +904,7 @@ void ActiveWindowControlWidget::organizeMenu() {
 
     // menu visible
     if (CustomSettings::instance()->isShowGlobalMenuOnHover() && isActiveWindowMaximized() && !this->isMenuShown()) {
-        if (!this->buttonLabelListBak.isEmpty()) {
-            this->setMenuVisible(false);
-        }
+        this->setMenuVisible(false);
     } else {
         this->setMenuVisible(!this->buttonLabelListBak.isEmpty());
     }
@@ -781,6 +919,21 @@ int ActiveWindowControlWidget::menuAvailableWidth() {
 
     if (this->m_buttonWidget->isVisible()) {
         usedWidth += this->m_layout->spacing() + this->m_buttonWidget->width();
+    }
+
+    if (m_newUi) {
+        if (m_appNameLabel->text().trimmed().isEmpty())
+            return qMax(0, width() - usedWidth - m_layout->spacing());
+        // Reserve the enlarged single-line name even while the title is visible,
+        // so showing the menu on hover cannot crowd out the last menu item.
+        QFont menuNameFont = m_appNameLabel->font();
+        menuNameFont.setPixelSize(IndicatorSingleLineFontSize);
+        const int nameWidth = qMin(320, QFontMetrics(menuNameFont).size(
+            Qt::TextSingleLine, m_appNameLabel->text()).width());
+        usedWidth += m_layout->spacing() + nameWidth
+            + m_indicatorLayout->contentsMargins().left()
+            + m_indicatorLayout->contentsMargins().right();
+        return qMax(0, width() - usedWidth - m_layout->spacing());
     }
 
     if (this->m_appNameLabel->isVisible()) {
@@ -818,6 +971,7 @@ void ActiveWindowControlWidget::updateWaylandWindowInfo()
         setButtonsVisible(false);
         m_winTitleLabel->setText(currActiveWinTitle);
         m_appNameLabel->setText(tr("Desktop"));
+        m_applicationNames.clear();
         if (!CustomSettings::instance()->isShowAppNameInsteadIcon()) {
             updateWindowIcon();
         }
@@ -828,7 +982,7 @@ void ActiveWindowControlWidget::updateWaylandWindowInfo()
 
     currActiveWinTitle = info.title;
     m_winTitleLabel->setText(currActiveWinTitle);
-    m_appNameLabel->setText(waylandApplicationName(info.appId, info.title));
+    m_appNameLabel->setText(applicationDisplayName(info.appId, info.title));
     setButtonsVisible(info.maximized);
 
     updateWindowIcon();
@@ -838,20 +992,39 @@ void ActiveWindowControlWidget::updateWaylandWindowInfo()
     } else {
         m_appMenuModel->clearApplicationMenu();
     }
+    if (m_newUi)
+        setMenuVisible(!m_menuWidget->isHidden());
 }
 
-QString ActiveWindowControlWidget::waylandApplicationName(const QString &appId,
-                                                          const QString &title) const
+QString ActiveWindowControlWidget::applicationDisplayName(const QString &appId,
+                                                          const QString &title)
 {
+    m_applicationNames.clear();
     QString desktopId = QFileInfo(appId).fileName();
     if (!desktopId.endsWith(QLatin1String(".desktop"), Qt::CaseInsensitive)) {
         desktopId += QStringLiteral(".desktop");
+    }
+
+    // GXDE Terminal still uses the upstream name in its window titles.
+    // Scope legacy names to this app rather than stripping arbitrary suffixes.
+    if (desktopId.compare(QStringLiteral("gxde-terminal.desktop"), Qt::CaseInsensitive) == 0
+        || desktopId.compare(QStringLiteral("deepin-terminal.desktop"), Qt::CaseInsensitive) == 0) {
+        m_applicationNames << QStringLiteral("Deepin Terminal")
+                           << QStringLiteral("深度终端")
+                           << QStringLiteral("深度終端")
+                           << QStringLiteral("Deepin 終端器");
     }
 
     const QString desktopFile =
         QStandardPaths::locate(QStandardPaths::ApplicationsLocation, desktopId);
     if (!desktopFile.isEmpty()) {
         QSettings desktopEntry(desktopFile, QSettings::IniFormat);
+        for (const QString &key : desktopEntry.allKeys()) {
+            if (key == QLatin1String("Desktop Entry/Name")
+                || key.startsWith(QLatin1String("Desktop Entry/Name[")))
+                m_applicationNames.append(desktopEntry.value(key).toString().trimmed());
+        }
+        m_applicationNames.removeDuplicates();
         const QString localizedKey = QStringLiteral("Desktop Entry/Name[%1]")
                                          .arg(QLocale().name());
         QString name = desktopEntry.value(localizedKey).toString();

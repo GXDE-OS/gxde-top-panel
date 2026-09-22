@@ -56,11 +56,16 @@ MainSettingWidget::MainSettingWidget(QWidget *parent) :
     ui->hideTitlebarCheckBox->setChecked(CustomSettings::instance()->isHideTitleWhenMax());
 
     ui->followSystemThemeCheckBox->setChecked(CustomSettings::instance()->isFollowSystemTheme());
+    ui->newUiCheckBox->setChecked(CustomSettings::instance()->isNewUiEnabled());
+    connect(ui->newUiCheckBox, &QCheckBox::toggled,
+        CustomSettings::instance(), &CustomSettings::setNewUiEnabled);
     ui->useDarkDtkPanelCheckBox->setChecked(CustomSettings::instance()->isUseDarkDtkPanel());
     connect(ui->useDarkDtkPanelCheckBox, &QCheckBox::toggled,
             CustomSettings::instance(), &CustomSettings::setUseDarkDtkPanel);
     connect(CustomSettings::instance(), &CustomSettings::settingsChanged, this, [this] {
         const auto *settings = CustomSettings::instance();
+        const QSignalBlocker newUiBlocker(ui->newUiCheckBox);
+        ui->newUiCheckBox->setChecked(settings->isNewUiEnabled());
         const QSignalBlocker blocker(ui->useDarkDtkPanelCheckBox);
         ui->useDarkDtkPanelCheckBox->setChecked(settings->isUseDarkDtkPanel());
         const QSignalBlocker iconBlocker(ui->alwaysUseDefaultIconCheckBox);

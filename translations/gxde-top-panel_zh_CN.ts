@@ -31,6 +31,10 @@
 <context>
     <name>MainSettingWidget</name>
     <message>
+        <source>Enable new UI</source>
+        <translation>启用新版UI</translation>
+    </message>
+    <message>
         <source>Always use default icon</source>
         <translation>始终使用默认图标</translation>
     </message>

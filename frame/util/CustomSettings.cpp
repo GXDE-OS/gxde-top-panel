@@ -43,7 +43,6 @@ CustomSettings::CustomSettings() {
     this->showLogoWithAppName = true;
     this->ignoreDock = false;
     this->buttonOnLeft = true;
-    this->panelHeight = 24;
 
     this->buttonHighlight = true;
     this->buttonHighLightColor = QColor("#9d2933");
@@ -293,6 +292,7 @@ void CustomSettings::saveSettings() {
     settings.setValue("panel/opacity", this->panelOpacity);
     settings.setValue("panel/followSystemTheme", this->isFollowSystemTheme());
     settings.setValue("panel/useDarkDtkPanel", useDarkDtkPanel);
+    settings.setValue("panel/newUiEnabled", newUiEnabled);
     settings.setValue("windowControl/fontColor", this->activeFontColor);
     settings.setValue("windowControl/closeIcon", this->activeCloseIconPath);
     settings.setValue("windowControl/unmaxIcon", this->activeUnmaximizedIconPath);
@@ -343,6 +343,7 @@ void CustomSettings::readSettings() {
     this->buttonHighLightColor = settings.value("windowControl/buttonHighlightColor", this->buttonHighLightColor).value<QColor>();
     this->followSystemTheme = settings.value("panel/followSystemTheme", this->isFollowSystemTheme()).toBool();
     useDarkDtkPanel = settings.value("panel/useDarkDtkPanel", false).toBool();
+    newUiEnabled = settings.value("panel/newUiEnabled", true).toBool();
     this->allowDragWindowWhenMax = settings.value("windowControl/allowDragWindowWhenMax", this->allowDragWindowWhenMax).toBool();
 
     QSettings kwinrc(getConfigPath(), QSettings::IniFormat);
@@ -398,7 +399,19 @@ void CustomSettings::setIgnoreDock(bool ignoreDock) {
 }
 
 int CustomSettings::getPanelHeight() const {
-    return panelHeight;
+    // Match Husky-Panel's barHeight in logical pixels; Qt handles scaling.
+    return newUiEnabled ? 32 : 24;
+}
+
+bool CustomSettings::isNewUiEnabled() const {
+    return newUiEnabled;
+}
+
+void CustomSettings::setNewUiEnabled(bool enabled) {
+    if (newUiEnabled == enabled)
+        return;
+    newUiEnabled = enabled;
+    emit settingsChanged();
 }
 
 bool CustomSettings::isButtonOnLeft() const {

@@ -87,6 +87,8 @@ public:
     void setDefaultShowGlobalMenuOnHover();
 
     int getPanelHeight() const;
+    bool isNewUiEnabled() const;
+    void setNewUiEnabled(bool enabled);
 
     bool isButtonOnLeft() const;
 
@@ -116,7 +118,7 @@ private:
     QString systemIconTheme;
 
 private:
-    int panelHeight;
+    bool newUiEnabled = true;
 
     // panel
     quint8 panelOpacity;

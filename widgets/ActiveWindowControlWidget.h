@@ -71,7 +71,7 @@ private:
     void updateWaylandWindowInfo();
     void updateWindowIcon();
     void setWindowIcon(const QIcon &icon);
-    QString waylandApplicationName(const QString &appId, const QString &title) const;
+    QString applicationDisplayName(const QString &appId, const QString &title);
 
 private slots:
     void updateMenu();
@@ -95,6 +95,10 @@ private:
 
     QLabel *m_iconLabel;
     QLabel *m_appNameLabel;
+    QWidget *m_indicatorWidget;
+    QVBoxLayout *m_indicatorLayout;
+    bool m_newUi = false;
+    QStringList m_applicationNames;
     QWidget *m_menuWidget;
     QLayout *m_menuLayout;
     AppMenuModel *m_appMenuModel;

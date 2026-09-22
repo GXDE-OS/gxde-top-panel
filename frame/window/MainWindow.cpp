@@ -118,8 +118,8 @@ MainWindow::MainWindow(QScreen *screen, bool enableBlacklist, QWidget *parent)
 void MainWindow::resizeMainPanelWindow()
 {
     m_settings->calculateWindowConfig();
+    setFixedHeight(m_settings->m_mainWindowSize.height());
     if (m_isWayland) {
-        setFixedHeight(m_settings->m_mainWindowSize.height());
         m_mainPanel->setFixedSize(size());
         updateLayerShellExclusiveZone();
         return;
@@ -395,6 +395,10 @@ void MainWindow::applyCustomSettings(const CustomSettings &customSettings) {
     this->setMaskColor(customSettings.getPanelBgColor());
     this->m_settings->applyCustomSettings(customSettings);
     this->m_mainPanel->applyCustomSettings(customSettings);
+    if (height() != customSettings.getPanelHeight()) {
+        resizeMainPanelWindow();
+        setStrutPartial();
+    }
 }
 
 void MainWindow::adjustPosition() {

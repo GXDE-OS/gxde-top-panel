@@ -49,7 +49,7 @@ QOperationWidget::QOperationWidget(bool leftSide, QWidget *parent)
         this->wrapLayout->addWidget(this->closeButton);
     }
     this->m_layout->addWidget(this->wrapLabel);
-    this->wrapLabel->setFixedWidth(82);
+    this->wrapLabel->setFixedWidth(3 * buttonSize + 22);
 
     this->m_buttonShowAnimation = new QPropertyAnimation(this, "maximumWidth");
     this->m_buttonShowAnimation->setEndValue(this->width());
@@ -83,6 +83,19 @@ void QOperationWidget::showWithAnimation() {
 }
 
 void QOperationWidget::applyCustomSettings(const CustomSettings &settings) {
+    const int buttonSize = settings.getPanelHeight() - 4;
+    for (auto *button : {closeButton, maxButton, minButton}) {
+        button->setFixedSize(buttonSize, buttonSize);
+        button->setIconSize(QSize(buttonSize - 6, buttonSize - 6));
+    }
+    const int targetWidth = 3 * buttonSize + 22;
+    wrapLabel->setFixedWidth(targetWidth);
+    m_buttonShowAnimation->setEndValue(targetWidth);
+    if (m_buttonShowAnimation->state() == QAbstractAnimation::Stopped
+            && m_buttonHideAnimation->state() == QAbstractAnimation::Stopped) {
+        setMaximumWidth(targetWidth);
+    }
+
     this->closeButton->setIcon(QIcon(settings.getActiveCloseIconPath()));
     this->maxButton->setIcon(QIcon(settings.getActiveUnmaximizedIconPath()));
     this->minButton->setIcon(QIcon(settings.getActiveMinimizedIconPath()));

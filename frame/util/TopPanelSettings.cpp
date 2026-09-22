@@ -13,8 +13,6 @@
 #include <iostream>
 #include "CustomSettings.h"
 
-#define WINDOW_MAX_SIZE          100
-
 extern const QPoint rawXPosition(const QPoint &scaledPos);
 
 
@@ -168,9 +166,7 @@ bool TopPanelSettings::eventFilter(QObject *watched, QEvent *event)
 void TopPanelSettings::calculateWindowConfig()
 {
     if (m_displayMode == Dock::Efficient) {
-        if (m_dockWindowSize > WINDOW_MAX_SIZE || m_dockWindowSize < CustomSettings::instance()->getPanelHeight()) {
-            m_dockWindowSize = CustomSettings::instance()->getPanelHeight();
-        }
+        m_dockWindowSize = CustomSettings::instance()->getPanelHeight();
 
         m_mainWindowSize.setHeight(m_dockWindowSize);
 
