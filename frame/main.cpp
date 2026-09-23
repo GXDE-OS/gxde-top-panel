@@ -6,9 +6,13 @@
 #include <DGuiApplicationHelper>
 #include <QDBusMetaType>
 #include <QMap>
+#include <QMargins>
+#include <QEvent>
+#include <QWindow>
 #include <unistd.h>
 #include <iostream>
 #include <LayerShellQt/Shell>
+#include <LayerShellQt/Window>
 #include "window/MainWindow.h"
 
 DWIDGET_USE_NAMESPACE
@@ -31,10 +35,12 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    const bool waylandSession = !qgetenv("WAYLAND_DISPLAY").isEmpty();
+
     // If a single Wayland display is detected, then it IS wayland.
     // Under wayland, we enforce QT_QPA_PLATFORM to be wayland, otherwise
     // laytershell will MALFUNCTION!!
-    if (!qgetenv("WAYLAND_DISPLAY").isEmpty()) {
+    if (waylandSession) {
         qputenv("QT_QPA_PLATFORM", "wayland");
         // LayerShellQt replaces the shell integration for every top-level
         // window in this process.
@@ -51,6 +57,53 @@ int main(int argc, char *argv[]) {
     }
 
     DApplication app(argc, argv);
+
+    if (waylandSession && !settingsMode) {
+        class PopupLayerShellPatcher : public QObject {
+        public:
+            using QObject::QObject;
+
+        protected:
+            bool eventFilter(QObject *object, QEvent *event) override {
+                QWidget *target = qobject_cast<QWidget *>(object);
+                if (target && target->windowType() == Qt::Popup
+                        && event->type() == QEvent::Show) {
+                    fixPopupLayerShell(target);
+                }
+                return QObject::eventFilter(object, event);
+            }
+
+        private:
+            static void fixPopupLayerShell(QWidget *popup) {
+                popup->createWinId();
+                QWindow *window = popup->windowHandle();
+                if (!window) {
+                    return;
+                }
+
+                LayerShellQt::Window *layer = LayerShellQt::Window::get(window);
+                if (!layer) {
+                    return;
+                }
+
+                const QPoint pos = popup->pos();
+                LayerShellQt::Window::Anchors anchors;
+                anchors |= LayerShellQt::Window::AnchorTop;
+                anchors |= LayerShellQt::Window::AnchorLeft;
+                layer->setAnchors(anchors);
+                layer->setMargins(QMargins(pos.x(), pos.y(), 0, 0));
+                layer->setLayer(LayerShellQt::Window::LayerOverlay);
+                layer->setExclusiveZone(0);
+
+                const bool acceptsKeyboard = window->transientParent() == nullptr;
+                layer->setKeyboardInteractivity(acceptsKeyboard
+                    ? LayerShellQt::Window::KeyboardInteractivityOnDemand
+                    : LayerShellQt::Window::KeyboardInteractivityNone);
+            }
+        };
+
+        app.installEventFilter(new PopupLayerShellPatcher(&app));
+    }
 
     QString locale = QLocale::system().name();
 
