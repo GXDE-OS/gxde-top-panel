@@ -6,6 +6,7 @@
 #include "MainWindow.h"
 #include "controller/dockitemmanager.h"
 #include "util/utils.h"
+#include "util/paneloutputs.h"
 #include <DGuiApplicationHelper>
 #include <iostream>
 #include <QScreen>
@@ -503,8 +504,14 @@ MainWindow* TopPanelLauncher::createPanel(QScreen* screen) {
 void TopPanelLauncher::rearrange() {
     this->primaryChanged();
 
-    // Under Wayland + dual screen + screen copy mode, each screen copy needs
-    // an individual bar.
+    const QList<QScreen *> screens = qApp->screens();
+    for (QScreen *screen : screens) {
+        connect(screen, &QScreen::geometryChanged, this,
+            &TopPanelLauncher::monitorsChanged, Qt::UniqueConnection);
+        connect(screen, &QScreen::physicalDotsPerInchChanged, this,
+            &TopPanelLauncher::monitorsChanged, Qt::UniqueConnection);
+    }
+
     bool ifCopyScreenMode = false;
     if (!m_isWayland) {
         for (auto p_screen : qApp->screens()) {
@@ -516,18 +523,25 @@ void TopPanelLauncher::rearrange() {
     }
     std::cout << "==============> ifCopyMode:" << ifCopyScreenMode << std::endl;
 
-    const QList<QScreen *> targetScreens = ifCopyScreenMode
-            ? QList<QScreen *>{ qApp->primaryScreen() }
-            : qApp->screens();
+    QList<QScreen *> targetScreens;
+    if (m_isWayland) {
+        QList<QRect> geometries;
+        for (QScreen *screen : screens) {
+            geometries.append(screen->geometry());
+        }
+
+        for (int index : panelOutputIndices(geometries,
+                screens.indexOf(qApp->primaryScreen()))) {
+            targetScreens.append(screens[index]);
+        }
+    } else {
+        targetScreens = ifCopyScreenMode
+            ? QList<QScreen *>{ qApp->primaryScreen() } : screens;
+    }
 
     for (auto p_screen : targetScreens) {
         if (!p_screen)
             continue;
-
-        connect(p_screen, &QScreen::geometryChanged, this,
-                &TopPanelLauncher::monitorsChanged, Qt::UniqueConnection);
-        connect(p_screen, &QScreen::physicalDotsPerInchChanged, this,
-                &TopPanelLauncher::monitorsChanged, Qt::UniqueConnection);
 
         if (mwMap.contains(p_screen)) {
             // adjust size

@@ -59,6 +59,15 @@ add_subdirectory("frame")
 #add_subdirectory("plugins")
 add_subdirectory("appmenu")
 
+include(CTest)
+if (BUILD_TESTING)
+    find_package(Qt6 REQUIRED COMPONENTS Core)
+    add_executable(paneloutputs_test tests/paneloutputs_test.cpp)
+    target_include_directories(paneloutputs_test PRIVATE ${CMAKE_SOURCE_DIR})
+    target_link_libraries(paneloutputs_test PRIVATE Qt6::Core)
+    add_test(NAME paneloutputs COMMAND paneloutputs_test)
+endif()
+
 # Install interface headers for development library
 install(FILES ${INTERFACES} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gxde-top-panel)
 
