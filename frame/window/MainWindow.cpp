@@ -14,6 +14,8 @@
 #include <QProcessEnvironment>
 #include <QTimer>
 #include <QWindow>
+#include <QPainter>
+#include "util/panelbackground.h"
 #include <KWindowEffects>
 #include <LayerShellQt/Window>
 
@@ -422,6 +424,19 @@ void MainWindow::resizeEvent(QResizeEvent* e) {
         m_mainPanel->setFixedSize(size());
         updateLayerShellExclusiveZone();
     }
+}
+
+void MainWindow::paintEvent(QPaintEvent *event) {
+    if (!m_isWayland) {
+        DBlurEffectWidget::paintEvent(event);
+        return;
+    }
+
+    QPainter painter(this);
+    QColor tint = CustomSettings::instance()->getPanelBgColor();
+    tint.setAlpha(CustomSettings::instance()->getPanelOpacity());
+    paintPanelBackground(painter, rect(), tint,
+        blurRectXRadius(), blurRectYRadius());
 }
 
 TopPanelLauncher::TopPanelLauncher()

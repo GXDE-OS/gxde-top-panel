@@ -74,6 +74,10 @@ if (BUILD_TESTING)
     target_include_directories(popupblur_test PRIVATE ${CMAKE_SOURCE_DIR})
     target_link_libraries(popupblur_test PRIVATE Qt6::Gui)
     add_test(NAME popupblur COMMAND popupblur_test)
+    add_executable(panelbackground_test tests/panelbackground_test.cpp)
+    target_include_directories(panelbackground_test PRIVATE ${CMAKE_SOURCE_DIR})
+    target_link_libraries(panelbackground_test PRIVATE Qt6::Gui)
+    add_test(NAME panelbackground COMMAND panelbackground_test)
 endif()
 
 # Install interface headers for development library

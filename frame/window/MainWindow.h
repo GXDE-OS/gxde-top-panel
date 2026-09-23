@@ -49,6 +49,7 @@ private slots:
 private:
     void mousePressEvent(QMouseEvent *e);
     void resizeEvent(QResizeEvent *e) override;
+    void paintEvent(QPaintEvent *event) override;
     void resizeMainPanelWindow();
     void clearStrutPartial();
     void setStrutPartial();
