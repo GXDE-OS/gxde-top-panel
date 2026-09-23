@@ -71,6 +71,7 @@ install(FILES ${CMAKE_SOURCE_DIR}/xml/com.deepin.dde.toppanel.gschema.xml DESTIN
 install(FILES ${CMAKE_SOURCE_DIR}/gxde-top-panel.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
 #install(FILES ${CMAKE_SOURCE_DIR}/gxde-top-panel.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/../../etc/xdg/autostart)
 install(DIRECTORY ${CMAKE_BINARY_DIR}/translations DESTINATION ${CMAKE_INSTALL_DATADIR}/gxde-top-panel)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/icons/ DESTINATION ${CMAKE_INSTALL_DATADIR}/gxde-top-panel/icons PATTERN README.md EXCLUDE)
 
 
 # 安装开发库头文件

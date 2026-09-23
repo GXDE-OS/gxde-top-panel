@@ -134,12 +134,32 @@ MainSettingWidget::MainSettingWidget(QWidget *parent) :
     ui->useDarkDtkPanelCheckBox->setChecked(CustomSettings::instance()->isUseDarkDtkPanel());
     connect(ui->useDarkDtkPanelCheckBox, &QCheckBox::toggled,
             CustomSettings::instance(), &CustomSettings::setUseDarkDtkPanel);
+    const auto syncIconStyleBoxes = [this] {
+        const QString &style = CustomSettings::instance()->getIconStyle();
+        const QSignalBlocker b23(ui->useDde23IconsCheckBox);
+        const QSignalBlocker b25(ui->useDde25IconsCheckBox);
+        ui->useDde23IconsCheckBox->setChecked(style == QLatin1String("dde23"));
+        ui->useDde25IconsCheckBox->setChecked(style == QLatin1String("dde25"));
+    };
+    syncIconStyleBoxes();
+    connect(ui->useDde23IconsCheckBox, &QCheckBox::toggled, this, [syncIconStyleBoxes](bool checked) {
+        CustomSettings::instance()->setIconStyle(checked ? QStringLiteral("dde23") : QString());
+        syncIconStyleBoxes();
+    });
+    connect(ui->useDde25IconsCheckBox, &QCheckBox::toggled, this, [syncIconStyleBoxes](bool checked) {
+        CustomSettings::instance()->setIconStyle(checked ? QStringLiteral("dde25") : QString());
+        syncIconStyleBoxes();
+    });
     connect(CustomSettings::instance(), &CustomSettings::settingsChanged, this, [this] {
         const auto *settings = CustomSettings::instance();
         const QSignalBlocker newUiBlocker(ui->newUiCheckBox);
         ui->newUiCheckBox->setChecked(settings->isNewUiEnabled());
         const QSignalBlocker blocker(ui->useDarkDtkPanelCheckBox);
         ui->useDarkDtkPanelCheckBox->setChecked(settings->isUseDarkDtkPanel());
+        const QSignalBlocker dde23Blocker(ui->useDde23IconsCheckBox);
+        const QSignalBlocker dde25Blocker(ui->useDde25IconsCheckBox);
+        ui->useDde23IconsCheckBox->setChecked(settings->getIconStyle() == QLatin1String("dde23"));
+        ui->useDde25IconsCheckBox->setChecked(settings->getIconStyle() == QLatin1String("dde25"));
         const QSignalBlocker themeBlocker(ui->followSystemThemeCheckBox);
         ui->followSystemThemeCheckBox->setChecked(settings->isFollowSystemTheme());
         const QSignalBlocker iconBlocker(ui->alwaysUseDefaultIconCheckBox);

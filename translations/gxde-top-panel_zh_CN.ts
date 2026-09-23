@@ -59,6 +59,14 @@ h代表时；m代表分；s代表秒
         <translation>使用深色DTK面板</translation>
     </message>
     <message>
+        <source>Use DDE V23 icon style</source>
+        <translation>使用DDE V23图标风格</translation>
+    </message>
+    <message>
+        <source>Use DDE V25 icon style</source>
+        <translation>使用DDE V25图标风格</translation>
+    </message>
+    <message>
         <location filename="../widgets/mainsettingwidget.ui" line="14"/>
         <source>GXDE Top Panel Settings</source>
         <translation>GXDE Top Panel 设置</translation>

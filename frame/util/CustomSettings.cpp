@@ -3,6 +3,9 @@
 //
 
 #include "CustomSettings.h"
+#include <QFile>
+#include <QCoreApplication>
+#include <QGSettings>
 #include "clockformat.h"
 #include <QSettings>
 #include <QDir>
@@ -22,6 +25,31 @@ DGUI_USE_NAMESPACE
 namespace {
 constexpr auto SettingsObjectPath = "/com/gxde/TopPanel/Settings";
 constexpr auto SettingsInterface = "com.gxde.TopPanel.Settings";
+}
+
+static QString resolveIconTheme(const QString &preferred) {
+    const auto themeExists = [](const QString &name) {
+        if (name.isEmpty())
+            return false;
+        for (const QString &dir : QIcon::themeSearchPaths()) {
+            if (QFile::exists(dir + "/" + name + "/index.theme"))
+                return true;
+        }
+        return false;
+    };
+
+    QString desktopTheme;
+    if (QGSettings::isSchemaInstalled("com.deepin.dde.appearance")) {
+        QGSettings appearance("com.deepin.dde.appearance");
+        desktopTheme = appearance.get("icon-theme").toString();
+    }
+
+    for (const QString &candidate : {preferred, desktopTheme}) {
+        if (themeExists(candidate)) {
+            return candidate;
+        }
+    }
+    return QStringLiteral("gxde");
 }
 
 CustomSettings::CustomSettings() {
@@ -52,13 +80,20 @@ CustomSettings::CustomSettings() {
     this->defaultDarkColor = Qt::black;
     this->defaultLightColor = Qt::white;
 
-    systemIconTheme = QIcon::themeName();
+    systemIconTheme = resolveIconTheme(QString::fromUtf8(
+        DGuiApplicationHelper::instance()->applicationTheme()->iconThemeName()));
     this->readSettings();
     connect(this, &CustomSettings::settingsChanged, this, &CustomSettings::saveSettings);
     connect(DGuiApplicationHelper::instance()->applicationTheme(),
             &DPlatformTheme::iconThemeNameChanged, this, [this](const QByteArray &name) {
-        systemIconTheme = QString::fromUtf8(name);
+        systemIconTheme = resolveIconTheme(QString::fromUtf8(name));
         applyPanelTheme();
+    });
+    
+    connect(DGuiApplicationHelper::instance(), &DGuiApplicationHelper::themeTypeChanged, this, [this] {
+        if (!iconStyle.isEmpty() && followSystemTheme && !useDarkDtkPanel) {
+            applyPanelTheme();
+        }
     });
 
     // The Wayland settings window is a separate, long-lived process. Notify
@@ -128,6 +163,7 @@ const QColor &CustomSettings::getPanelBgColor() const {
 
 void CustomSettings::setPanelBgColor(const QColor &panelBgColor) {
     CustomSettings::panelBgColor = panelBgColor;
+    applyPanelTheme();
     emit settingsChanged();
 }
 
@@ -293,6 +329,7 @@ void CustomSettings::saveSettings() {
     settings.setValue("panel/opacity", this->panelOpacity);
     settings.setValue("panel/followSystemTheme", this->isFollowSystemTheme());
     settings.setValue("panel/useDarkDtkPanel", useDarkDtkPanel);
+    settings.setValue("panel/iconStyle", iconStyle);
     settings.setValue("panel/newUiEnabled", newUiEnabled);
     settings.setValue("clock/customEnabled", customClockEnabled);
     settings.setValue("clock/use12Hour", clock12Hour);
@@ -347,6 +384,7 @@ void CustomSettings::readSettings() {
     this->buttonHighLightColor = settings.value("windowControl/buttonHighlightColor", this->buttonHighLightColor).value<QColor>();
     this->followSystemTheme = settings.value("panel/followSystemTheme", this->isFollowSystemTheme()).toBool();
     useDarkDtkPanel = settings.value("panel/useDarkDtkPanel", false).toBool();
+    iconStyle = settings.value("panel/iconStyle", QString()).toString();
     if (useDarkDtkPanel && followSystemTheme) {
         followSystemTheme = false;
         settings.setValue("panel/followSystemTheme", false);
@@ -511,14 +549,58 @@ void CustomSettings::setUseDarkDtkPanel(bool enabled) {
     emit settingsChanged();
 }
 
+const QString &CustomSettings::getIconStyle() const {
+    return iconStyle;
+}
+
+void CustomSettings::setIconStyle(const QString &style) {
+    if (iconStyle == style)
+        return;
+    iconStyle = style;
+    applyPanelTheme();
+    emit settingsChanged();
+}
+
+static void ensureBundledIconThemePath() {
+    static bool added = false;
+    if (added) {
+        return;
+    }
+
+    added = true;
+
+    QStringList paths = QIcon::themeSearchPaths();
+    const QStringList candidates {
+        QCoreApplication::applicationDirPath() + "/../../icons",
+        QStringLiteral("/usr/share/gxde-top-panel/icons"),
+    };
+    for (const QString &dir : candidates) {
+        if (QFile::exists(dir + "/dde25-dark/index.theme")) {
+            paths.prepend(QDir(dir).canonicalPath());
+            break;
+        }
+    }
+    QIcon::setThemeSearchPaths(paths);
+}
+
 void CustomSettings::applyPanelTheme() {
     auto *helper = DGuiApplicationHelper::instance();
-    helper->setPaletteType(useDarkDtkPanel ? DGuiApplicationHelper::DarkType
-                                         : (followSystemTheme ? DGuiApplicationHelper::UnknownType
-                                                              : DGuiApplicationHelper::LightType));
+    const bool darkPanel = useDarkDtkPanel
+        || (!followSystemTheme && panelBgColor.lightness() < 128);
+    helper->setPaletteType(followSystemTheme && !useDarkDtkPanel
+                               ? DGuiApplicationHelper::UnknownType
+                               : (darkPanel ? DGuiApplicationHelper::DarkType
+                                            : DGuiApplicationHelper::LightType));
     // Set the process-local icon theme so plugins using QIcon::fromTheme also
     // select the dark variants, without changing the desktop's icon theme.
-    const QString iconTheme = useDarkDtkPanel ? QStringLiteral("gxde-dark") : systemIconTheme;
+    QString iconTheme = darkPanel ? QStringLiteral("gxde-dark") : systemIconTheme;
+    if (iconStyle == QLatin1String("dde23") || iconStyle == QLatin1String("dde25")) {
+        ensureBundledIconThemePath();
+        const bool dark = followSystemTheme && !useDarkDtkPanel
+            ? helper->themeType() == DGuiApplicationHelper::DarkType
+            : darkPanel;
+        iconTheme = iconStyle + (dark ? QStringLiteral("-dark") : QStringLiteral("-light"));
+    }
     if (QIcon::themeName() != iconTheme) {
         QIcon::setThemeName(iconTheme);
         emit panelThemeChanged();

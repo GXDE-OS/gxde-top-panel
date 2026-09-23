@@ -121,6 +121,7 @@ private:
     QString getConfigPath();    
     void applyPanelTheme();
     bool useDarkDtkPanel = false;
+    QString iconStyle;
     bool reloadingSettings = false;
     QString systemIconTheme;
 
@@ -163,6 +164,9 @@ public:
 
     bool isUseDarkDtkPanel() const;
     void setUseDarkDtkPanel(bool enabled);
+
+    const QString &getIconStyle() const;
+    void setIconStyle(const QString &style);
 
 public:
     bool isHideTitleWhenMax() const;
