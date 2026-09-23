@@ -26,6 +26,7 @@
 #include "pluginsiteminterface.h"
 
 class QGSettings;
+class QLabel;
 class PluginsItem : public DockItem
 {
 Q_OBJECT
@@ -73,6 +74,12 @@ protected:
     void resizeEvent(QResizeEvent *event) override;
 
 private:
+    void updateClock();
+    QFont clockFont() const;
+    QString m_clockText;
+    QLabel *m_clockLabel = nullptr;
+    bool m_customClockActive = false;
+
     void startDrag();
     void mouseClicked();
     bool checkGSettingsControl() const;

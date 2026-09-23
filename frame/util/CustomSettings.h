@@ -86,6 +86,11 @@ public:
     void setDefaultActiveDefaultAppIconPath();
     void setDefaultShowGlobalMenuOnHover();
 
+    bool isCustomClockEnabled() const { return customClockEnabled; }
+    QString getClockFormat() const { return clockFormat; }
+    void setCustomClockEnabled(bool enabled);
+    void setClockFormat(const QString &format);
+
     int getPanelHeight() const;
     bool isNewUiEnabled() const;
     void setNewUiEnabled(bool enabled);
@@ -119,6 +124,8 @@ private:
 
 private:
     bool newUiEnabled = true;
+    bool customClockEnabled = false;
+    QString clockFormat = QStringLiteral("hh:mm\\nMM-DD ddd");
 
     // panel
     quint8 panelOpacity;

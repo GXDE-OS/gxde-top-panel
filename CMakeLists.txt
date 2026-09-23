@@ -66,6 +66,10 @@ if (BUILD_TESTING)
     target_include_directories(paneloutputs_test PRIVATE ${CMAKE_SOURCE_DIR})
     target_link_libraries(paneloutputs_test PRIVATE Qt6::Core)
     add_test(NAME paneloutputs COMMAND paneloutputs_test)
+    add_executable(clockformat_test tests/clockformat_test.cpp)
+    target_include_directories(clockformat_test PRIVATE ${CMAKE_SOURCE_DIR})
+    target_link_libraries(clockformat_test PRIVATE Qt6::Core)
+    add_test(NAME clockformat COMMAND clockformat_test)
 endif()
 
 # Install interface headers for development library

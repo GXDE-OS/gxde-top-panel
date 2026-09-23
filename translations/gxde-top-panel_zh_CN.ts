@@ -30,6 +30,21 @@
 </context>
 <context>
     <name>MainSettingWidget</name>
+    <message><source>Clock</source><translation>时钟</translation></message>
+    <message><source>Customize clock format</source><translation>自定义时钟格式</translation></message>
+    <message><source>Below is a preview of your format:</source><translation>下方是您的格式预览：</translation></message>
+    <message>
+        <source>Use Y or YYYY for the full year; use YY for the two-digit year
+M represents the month; D represents the day; ddd represents the weekday
+h represents the hour; m represents the minute; s represents the second
+The clock format can contain custom text. Use \n for a line break (up to two lines)
+Escape the keywords above with a backslash \, for example, \Y displays Y instead of the year; likewise, \\ displays a single backslash</source>
+        <translation>使用Y或者YYYY代表完整年份；使用YY代表两位年份
+M代表月；D代表日；ddd代表星期
+h代表时；m代表分；s代表秒
+时钟格式可以是自定义的文案，用\n换行（最多接受两行）
+上述关键字可以使用反斜杠\转义，例如输入\Y可以打印Y，而不是年份；同样地，\\可以输出单个反斜杠</translation>
+    </message>
     <message>
         <source>Enable new UI</source>
         <translation>启用新版UI</translation>

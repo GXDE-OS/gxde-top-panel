@@ -3,6 +3,7 @@
 //
 
 #include "CustomSettings.h"
+#include "clockformat.h"
 #include <QSettings>
 #include <QDir>
 #include <QFileInfo>
@@ -293,6 +294,8 @@ void CustomSettings::saveSettings() {
     settings.setValue("panel/followSystemTheme", this->isFollowSystemTheme());
     settings.setValue("panel/useDarkDtkPanel", useDarkDtkPanel);
     settings.setValue("panel/newUiEnabled", newUiEnabled);
+    settings.setValue("clock/customEnabled", customClockEnabled);
+    settings.setValue("clock/format", clockFormat);
     settings.setValue("windowControl/fontColor", this->activeFontColor);
     settings.setValue("windowControl/closeIcon", this->activeCloseIconPath);
     settings.setValue("windowControl/unmaxIcon", this->activeUnmaximizedIconPath);
@@ -349,6 +352,8 @@ void CustomSettings::readSettings() {
         settings.sync();
     }
     newUiEnabled = settings.value("panel/newUiEnabled", true).toBool();
+    customClockEnabled = settings.value("clock/customEnabled", false).toBool();
+    clockFormat = ClockFormat::normalize(settings.value("clock/format", QStringLiteral("hh:mm\\nMM-DD ddd")).toString());
     this->allowDragWindowWhenMax = settings.value("windowControl/allowDragWindowWhenMax", this->allowDragWindowWhenMax).toBool();
 
     QSettings kwinrc(getConfigPath(), QSettings::IniFormat);
@@ -516,4 +521,19 @@ void CustomSettings::applyPanelTheme() {
         QIcon::setThemeName(iconTheme);
         emit panelThemeChanged();
     }
+}
+
+void CustomSettings::setCustomClockEnabled(bool enabled) {
+    if (customClockEnabled == enabled)
+        return;
+    customClockEnabled = enabled;
+    emit settingsChanged();
+}
+
+void CustomSettings::setClockFormat(const QString &format) {
+    const QString normalized = ClockFormat::normalize(format);
+    if (clockFormat == normalized)
+        return;
+    clockFormat = normalized;
+    emit settingsChanged();
 }

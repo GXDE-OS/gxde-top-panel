@@ -24,6 +24,10 @@
 #include "pluginsiteminterface.h"
 #include "utils.h"
 #include "panelforegroundeffect.h"
+#include "CustomSettings.h"
+#include "clockformat.h"
+#include <QTimer>
+#include <QLabel>
 #include <QPainter>
 #include <QBoxLayout>
 #include <QMouseEvent>
@@ -60,6 +64,29 @@ PluginsItem::PluginsItem(PluginsItemInterface *const pluginInter, const QString 
     setLayout(hLayout);
     setAccessibleName(pluginInter->pluginName());
     setAttribute(Qt::WA_TranslucentBackground);
+
+    if (pluginName() == QLatin1String("datetime")) {
+        m_clockLabel = new QLabel(this);
+        m_clockLabel->setTextFormat(Qt::PlainText);
+        m_clockLabel->setStyleSheet(QStringLiteral("background: transparent;"));
+        m_clockLabel->setAlignment(Qt::AlignCenter);
+        m_clockLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
+        hLayout->addWidget(m_clockLabel);
+        m_clockLabel->hide();
+        auto *timer = new QTimer(this);
+        timer->setInterval(1000);
+        connect(timer, &QTimer::timeout, this, &PluginsItem::updateClock);
+        connect(CustomSettings::instance(), &CustomSettings::settingsChanged, this, [this, timer] {
+            if (CustomSettings::instance()->isCustomClockEnabled())
+                timer->start();
+            else
+                timer->stop();
+            updateClock();
+        });
+        if (CustomSettings::instance()->isCustomClockEnabled())
+            timer->start();
+        updateClock();
+    }
 
     if (m_gsettings)
         connect(m_gsettings, &QGSettings::changed, this, &PluginsItem::onGSettingsChanged);
@@ -112,6 +139,13 @@ DockItem::ItemType PluginsItem::itemType() const
 
 QSize PluginsItem::sizeHint() const
 {
+    if (m_customClockActive) {
+        const QFontMetrics metrics(clockFont());
+        int width = 0;
+        for (const QString &line : m_clockText.split(QLatin1Char('\n')))
+            width = qMax(width, metrics.horizontalAdvance(line));
+        return QSize(width + 12, CustomSettings::instance()->getPanelHeight());
+    }
     return m_centralWidget->sizeHint();
 }
 
@@ -312,7 +346,8 @@ bool PluginsItem::checkGSettingsControl() const
 
 void PluginsItem::resizeEvent(QResizeEvent *event)
 {
-    setMaximumSize(m_centralWidget->maximumSize());
+    if (!m_customClockActive)
+        setMaximumSize(m_centralWidget->maximumSize());
     return DockItem::resizeEvent(event);
 }
 
@@ -320,5 +355,36 @@ void PluginsItem::setDraging(bool bDrag)
 {
     DockItem::setDraging(bDrag);
 
-    m_centralWidget->setVisible(!bDrag);
+    m_centralWidget->setVisible(!bDrag && !m_customClockActive);
+    if (m_clockLabel)
+        m_clockLabel->setVisible(!bDrag && m_customClockActive);
+}
+
+QFont PluginsItem::clockFont() const {
+    QFont font = CustomSettings::instance()->getActiveFont();
+    const int height = CustomSettings::instance()->getPanelHeight();
+    font.setPixelSize(m_clockText.contains(QLatin1Char('\n'))
+        ? qBound(8, height / 2 - 2, 12) : qBound(10, height - 6, 18));
+    return font;
+}
+
+void PluginsItem::updateClock() {
+    const bool enabled = CustomSettings::instance()->isCustomClockEnabled();
+    if (!enabled && !m_customClockActive)
+        return;
+    m_customClockActive = enabled;
+    m_centralWidget->setVisible(!enabled && !isDragging());
+    m_clockLabel->setVisible(enabled && !isDragging());
+    m_clockText = enabled ? ClockFormat::render(CustomSettings::instance()->getClockFormat(),
+                                               QDateTime::currentDateTime()) : QString();
+    m_clockLabel->setText(m_clockText);
+    m_clockLabel->setFont(clockFont());
+    QPalette palette = m_clockLabel->palette();
+    palette.setColor(QPalette::WindowText, CustomSettings::instance()->getActiveFontColor());
+    m_clockLabel->setPalette(palette);
+    setFixedWidth(qMax(20, sizeHint().width()));
+    if (enabled)
+        setFixedHeight(CustomSettings::instance()->getPanelHeight());
+    updateGeometry();
+    m_centralWidget->update();
 }

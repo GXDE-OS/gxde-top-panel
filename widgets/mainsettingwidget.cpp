@@ -8,12 +8,75 @@
 #include <QMovie>
 #include <QApplication>
 #include <iostream>
+#include <QLineEdit>
+#include <QTimer>
+#include "../frame/util/clockformat.h"
 
 MainSettingWidget::MainSettingWidget(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::MainSettingWidget)
 {
     ui->setupUi(this);
+    auto *clockPage = new QWidget(ui->tabWidget);
+    auto *clockLayout = new QVBoxLayout(clockPage);
+    auto *customClock = new QCheckBox(tr("Customize clock format"), clockPage);
+    customClock->setObjectName(QStringLiteral("customClockCheckBox"));
+    auto *clockFormat = new QLineEdit(clockPage);
+    clockFormat->setObjectName(QStringLiteral("clockFormatEdit"));
+    clockFormat->setMaxLength(256);
+    auto *clockHelp = new QLabel(tr("Use Y or YYYY for the full year; use YY for the two-digit year\n"
+                                  "M represents the month; D represents the day; ddd represents the weekday\n"
+                                  "h represents the hour; m represents the minute; s represents the second\n"
+                                  "The clock format can contain custom text. Use \\n for a line break (up to two lines)\n"
+                                  "Escape the keywords above with a backslash \\, for example, \\Y displays Y instead of the year; likewise, \\\\ displays a single backslash"), clockPage);
+    clockHelp->setWordWrap(true);
+    auto *clockPreview = new QLabel(clockPage);
+    clockPreview->setObjectName(QStringLiteral("clockPreviewLabel"));
+    clockPreview->setTextFormat(Qt::PlainText);
+    clockPreview->setAlignment(Qt::AlignCenter);
+    clockPreview->setMinimumHeight(64);
+    clockLayout->addWidget(customClock);
+    clockLayout->addWidget(clockFormat);
+    clockLayout->addWidget(clockHelp);
+    clockLayout->addWidget(new QLabel(tr("Below is a preview of your format:"), clockPage));
+    clockLayout->addWidget(clockPreview);
+    clockLayout->addStretch();
+    ui->tabWidget->insertTab(1, clockPage, tr("Clock"));
+    auto syncClock = [customClock, clockFormat] {
+        const auto *settings = CustomSettings::instance();
+        const QSignalBlocker enabledBlocker(customClock);
+        const QSignalBlocker formatBlocker(clockFormat);
+        customClock->setChecked(settings->isCustomClockEnabled());
+        if (ClockFormat::normalize(clockFormat->text()) != settings->getClockFormat()) {
+            const int cursor = clockFormat->cursorPosition();
+            const int selectionStart = clockFormat->selectionStart();
+            const int selectionLength = clockFormat->selectedText().size();
+            clockFormat->setText(settings->getClockFormat());
+            if (selectionStart >= 0) {
+                if (cursor == selectionStart)
+                    clockFormat->setSelection(selectionStart + selectionLength, -selectionLength);
+                else
+                    clockFormat->setSelection(selectionStart, selectionLength);
+            } else {
+                clockFormat->setCursorPosition(cursor);
+            }
+        }
+        clockFormat->setEnabled(settings->isCustomClockEnabled());
+    };
+    syncClock();
+    connect(CustomSettings::instance(), &CustomSettings::settingsChanged, clockPage, syncClock);
+    connect(customClock, &QCheckBox::toggled, CustomSettings::instance(), &CustomSettings::setCustomClockEnabled);
+    connect(clockFormat, &QLineEdit::textEdited, CustomSettings::instance(), &CustomSettings::setClockFormat);
+    auto updateClockPreview = [clockFormat, clockPreview] {
+        clockPreview->setText(ClockFormat::render(clockFormat->text(), QDateTime::currentDateTime()));
+    };
+    connect(clockFormat, &QLineEdit::textChanged, clockPage, updateClockPreview);
+    auto *clockTimer = new QTimer(clockPage);
+    clockTimer->setInterval(1000);
+    connect(clockTimer, &QTimer::timeout, clockPage, updateClockPreview);
+    clockTimer->start();
+    updateClockPreview();
+
     ui->panelColorlabel->setStyleSheet(QString("QLabel {background-color: %1;}").arg(CustomSettings::instance()->getPanelBgColor().name()));
     ui->fontColorLabel->setStyleSheet(QString("QLabel {background-color: %1;}").arg(CustomSettings::instance()->getActiveFontColor().name()));
     ui->buttonHighlightColorLabel->setStyleSheet(QString("QLabel {background-color: %1;}").arg(CustomSettings::instance()->getButtonHighLightColor().name()));
