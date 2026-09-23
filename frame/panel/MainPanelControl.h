@@ -27,6 +27,7 @@ public:
     void addTrayAreaItem(int index, QWidget *wdg);
     void removeTrayAreaItem(QWidget *wdg);
     void getTrayVisableItemCount();
+    void updatePluginAreaMargins();
     void addFixedAreaItem(int index, QWidget *wdg);
     void removePluginAreaItem(QWidget *wdg);
     void addPluginAreaItem(int index, QWidget *wdg);

@@ -60,7 +60,7 @@ void MainPanelControl::init() {
     m_trayAreaWidget->setAccessibleName("trayarea");
     m_trayAreaLayout->setContentsMargins(0, 0, 0, 0);
     m_trayAreaLayout->setSpacing(0);
-    m_trayAreaLayout->setContentsMargins(0, 2, 0, 2);
+    m_trayAreaLayout->setContentsMargins(0, 0, 0, 0);
 
     // 插件
     m_pluginAreaWidget->setLayout(m_pluginLayout);
@@ -68,7 +68,7 @@ void MainPanelControl::init() {
     m_pluginAreaWidget->setAccessibleName("pluginarea");
     m_pluginLayout->setContentsMargins(0, 0, 0, 0);
     m_pluginLayout->setSpacing(8);
-    m_pluginLayout->setContentsMargins(10, 0, 10, 0);
+    updatePluginAreaMargins();
 
     m_pluginAreaWidget->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
     m_trayAreaWidget->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
@@ -141,8 +141,7 @@ void MainPanelControl::itemUpdated(DockItem *item)
 
 void MainPanelControl::resizeDockIcon()
 {
-    if (!m_tray)
-        return;
+    const int trayVisibleCount = m_tray ? m_tray->trayVisableItemCount() : 0;
     // 插件有点特殊，因为会引入第三方的插件，并不会受dock的缩放影响，我们只能限制我们自己的插件，否则会导致显示错误。
     // 以下是受控制的插件
     PluginsItem *trashPlugin = nullptr;
@@ -162,7 +161,7 @@ void MainPanelControl::resizeDockIcon()
     // 总宽度
     int totalLength = ((m_position == Position::Top) || (m_position == Position::Bottom)) ? width() : height();
     // 减去托盘间隔区域
-    totalLength -= (m_tray->trayVisableItemCount() + 1) * 10;
+    totalLength -= (trayVisibleCount + 1) * 10;
     // 减去插件间隔
     totalLength -= (m_pluginLayout->count() + 1) * 10;
     // 减去3个分割线的宽度
@@ -185,7 +184,7 @@ void MainPanelControl::resizeDockIcon()
         return;
 
     // 参与计算的插件的个数（包含托盘和插件，垃圾桶，关机，屏幕键盘）
-    int pluginCount = m_tray->trayVisableItemCount() + (trashPlugin ? 1 : 0) + (shutdownPlugin ? 1 : 0) + (keyboardPlugin ? 1 : 0);
+    int pluginCount = trayVisibleCount + (trashPlugin ? 1 : 0) + (shutdownPlugin ? 1 : 0) + (keyboardPlugin ? 1 : 0);
 
     // icon个数
     int iconCount = pluginCount;
@@ -193,7 +192,7 @@ void MainPanelControl::resizeDockIcon()
     int iconSize = 0;
 
     // 余数
-    int yu = (totalLength % iconCount);
+    int yu = iconCount > 0 ? (totalLength % iconCount) : 0;
     // icon宽度 = (总宽度-余数)/icon个数
     if (iconCount > 0)
         iconSize = (totalLength - yu) / iconCount;
@@ -253,7 +252,8 @@ void MainPanelControl::calcuDockIconSize(int w, int h, PluginsItem *trashPlugin,
         return;
 
     if ((m_position == Position::Top) || (m_position == Position::Bottom)) {
-        m_tray->centralWidget()->setProperty("iconSize", tray_item_size);
+        if (m_tray)
+            m_tray->centralWidget()->setProperty("iconSize", tray_item_size);
 
         // 插件
         if (shutdownPlugin)
@@ -262,7 +262,8 @@ void MainPanelControl::calcuDockIconSize(int w, int h, PluginsItem *trashPlugin,
             keyboardPlugin->setFixedSize(tray_item_size, h);
 
     } else {
-        m_tray->centralWidget()->setProperty("iconSize", tray_item_size);
+        if (m_tray)
+            m_tray->centralWidget()->setProperty("iconSize", tray_item_size);
 
         if (shutdownPlugin)
             shutdownPlugin->setFixedSize(tray_item_size, tray_item_size);
@@ -315,12 +316,23 @@ void MainPanelControl::addTrayAreaItem(int index, QWidget *wdg)
 {
     m_tray = static_cast<TrayPluginItem *>(wdg);
     m_trayAreaLayout->insertWidget(index, wdg);
+    updatePluginAreaMargins();
     resizeDockIcon();
 }
 
 void MainPanelControl::removeTrayAreaItem(QWidget *wdg)
 {
     m_trayAreaLayout->removeWidget(wdg);
+    if (wdg == m_tray) {
+        m_tray = nullptr;
+    }
+    updatePluginAreaMargins();
+    resizeDockIcon();
+}
+
+void MainPanelControl::updatePluginAreaMargins()
+{
+    m_pluginLayout->setContentsMargins(m_tray ? 0 : 10, 0, 10, 0);
 }
 
 void MainPanelControl::getTrayVisableItemCount()
