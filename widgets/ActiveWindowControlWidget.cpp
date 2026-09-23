@@ -459,6 +459,15 @@ void ActiveWindowControlWidget::trigger(QClickableLabel *ctx, int idx) {
     qDebug() << "ActiveWindowControlWidget#trigger() is running..";
     if (actionMenu) {
         actionMenu->installEventFilter(this);
+        // 必须先关掉旧菜单再弹新菜单：旧菜单的 layer 表面还在显示时弹出的新菜单
+        // 会被合成器搁置、始终得不到显示（表现为切换到隔壁菜单时一片空白）
+        QMenu *oldMenu = m_currentMenu;
+        m_currentMenu = actionMenu;
+        if (oldMenu && oldMenu != actionMenu) {
+            //don't initialize the currentIndex when another menu is already shown
+            disconnect(oldMenu, &QMenu::aboutToHide, this, &ActiveWindowControlWidget::onMenuAboutToHide);
+            oldMenu->hide();
+        }
         const QPoint popupPosition =
             m_menuWidget->mapToGlobal(ctx->geometry().bottomLeft()) + QPoint(0, 1);
         if (m_isWayland) {
@@ -478,13 +487,6 @@ void ActiveWindowControlWidget::trigger(QClickableLabel *ctx, int idx) {
         }
         actionMenu->popup(popupPosition);
 
-        QMenu *oldMenu = m_currentMenu;
-        m_currentMenu = actionMenu;
-        if (oldMenu && oldMenu != actionMenu) {
-            //don't initialize the currentIndex when another menu is already shown
-            disconnect(oldMenu, &QMenu::aboutToHide, this, &ActiveWindowControlWidget::onMenuAboutToHide);
-            oldMenu->hide();
-        }
 
         // fix: random losing selected color
         ctx->clicked();
