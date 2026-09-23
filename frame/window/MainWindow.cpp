@@ -299,8 +299,8 @@ void MainWindow::initConnections() {
     connect(m_itemManager, &DockItemManager::itemUpdated, m_mainPanel, &MainPanelControl::itemUpdated, Qt::DirectConnection);
     connect(m_itemManager, &DockItemManager::itemRemoved, m_mainPanel, &MainPanelControl::removeItem, Qt::DirectConnection);
 
-    connect(m_mainPanel, &MainPanelControl::itemMoved, DockItemManager::instance(), &DockItemManager::itemMoved, Qt::DirectConnection);
-    connect(m_mainPanel, &MainPanelControl::itemAdded, DockItemManager::instance(), &DockItemManager::itemAdded, Qt::DirectConnection);
+    connect(m_mainPanel, &MainPanelControl::itemMoved, m_itemManager, &DockItemManager::itemMoved, Qt::DirectConnection);
+    connect(m_mainPanel, &MainPanelControl::itemAdded, m_itemManager, &DockItemManager::itemAdded, Qt::DirectConnection);
 
     // 因为 DDE15 与 DDE20 的接口有差异，
     // DDE15 需要通过 FrontendWindowRectChanged 而不是 PositionChanged 检测任务栏的位置和大小变化

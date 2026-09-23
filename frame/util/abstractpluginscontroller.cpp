@@ -26,6 +26,7 @@
 #include <DNotifySender>
 #include <DSysInfo>
 
+#include <QDBusServiceWatcher>
 #include <QDebug>
 #include <QDir>
 #include <QMapIterator>
@@ -276,18 +277,28 @@ void AbstractPluginsController::loadPlugin(const QString &pluginFile)
     interfaceData["pluginloader"] = pluginLoader;
     m_pluginsMap.insert(interface, interfaceData);
     QString dbusService = meta.value("depends-daemon-dbus-service").toString();
-    if (!dbusService.isEmpty() && !m_dbusDaemonInterface->isServiceRegistered(dbusService).value()) {
+
+    // com.deepin.dde.TrayManager 由 X11 下的 XEmbed 托盘管理器提供，
+    // Wayland 会话下永远不会注册，托盘走 SNI 不需要它，直接跳过等待
+    const bool skipMissingService =
+        !qgetenv("WAYLAND_DISPLAY").isEmpty()
+        && dbusService == QStringLiteral("com.deepin.dde.TrayManager");
+    if (!dbusService.isEmpty()
+            && !skipMissingService
+            && !m_dbusDaemonInterface->isServiceRegistered(dbusService).value()) {
         qDebug() << objectName() << dbusService << "daemon has not started, waiting for signal";
-        connect(m_dbusDaemonInterface, &QDBusConnectionInterface::serviceOwnerChanged, this,
-                [ = ](const QString & name, const QString & oldOwner, const QString & newOwner) {
-                    Q_UNUSED(oldOwner);
-                    if (name == dbusService && !newOwner.isEmpty()) {
-                        qDebug() << objectName() << dbusService << "daemon started, init plugin and disconnect";
-                        initPlugin(interface);
-                        disconnect(m_dbusDaemonInterface);
-                    }
-                }
-        );
+
+        auto *watcher = new QDBusServiceWatcher(
+            dbusService,
+            QDBusConnection::sessionBus(),
+            QDBusServiceWatcher::WatchForRegistration,
+            this);
+        connect(watcher, &QDBusServiceWatcher::serviceRegistered, this,
+            [ = ](const QString &) {
+                qDebug() << objectName() << dbusService << "daemon started, init plugin";
+                watcher->deleteLater();
+                initPlugin(interface);
+            });
         return;
     }
 
