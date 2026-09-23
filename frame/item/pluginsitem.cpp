@@ -28,6 +28,7 @@
 #include "clockformat.h"
 #include <QTimer>
 #include <QLabel>
+#include <QFontInfo>
 #include <QPainter>
 #include <QBoxLayout>
 #include <QMouseEvent>
@@ -361,10 +362,16 @@ void PluginsItem::setDraging(bool bDrag)
 }
 
 QFont PluginsItem::clockFont() const {
-    QFont font = CustomSettings::instance()->getActiveFont();
-    const int height = CustomSettings::instance()->getPanelHeight();
-    font.setPixelSize(m_clockText.contains(QLatin1Char('\n'))
-        ? qBound(8, height / 2 - 2, 12) : qBound(10, height - 6, 18));
+    QFont font = m_centralWidget->font();
+    const int lines = m_clockText.contains(QLatin1Char('\n')) ? 2 : 1;
+    const int availableHeight = CustomSettings::instance()->getPanelHeight() - 4;
+    while (QFontMetrics(font).height() * lines > availableHeight) {
+        const int pixels = QFontInfo(font).pixelSize();
+        if (pixels <= 1) {
+            break;
+        }
+        font.setPixelSize(pixels - 1);
+    }
     return font;
 }
 
