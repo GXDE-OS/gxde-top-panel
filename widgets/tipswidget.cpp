@@ -1,4 +1,5 @@
 #include "tipswidget.h"
+#include "../frame/util/CustomSettings.h"
 
 #include <QPainter>
 
@@ -28,7 +29,7 @@ void TipsWidget::paintEvent(QPaintEvent *event)
     refreshFont();
 
     QPainter painter(this);
-    painter.setPen(QPen(palette().brightText(), 1));
+    painter.setPen(QPen(CustomSettings::instance()->getActiveFontColor(), 1));
 
     QTextOption option;
     option.setAlignment(Qt::AlignCenter);
