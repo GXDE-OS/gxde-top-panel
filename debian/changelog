@@ -1,3 +1,22 @@
+gxde-top-panel (2.0.0) UNRELEASED; urgency=medium
+
+  * 新增「始终使用默认app图标」选项
+  * 修复了app图标在Wayland下被裁切的问题
+  * 增加了一套全新的局布
+  * 修复了Wayland多屏复制下多条顶栏重叠的问题
+  * 新增深色模式
+  * 使用DTK重写了设置窗
+  * 允许用户自行设置时钟格式
+  * 修复Wayland下LayerShell问题
+  * 微调UI
+  * 修复了虚拟键盘不响应的问题
+  * 现在可以记住用户自定义的插件的顺序了
+  * 新增顶栏托盘
+  * 修改菜单样式为DTK6样式
+  * 修复「开启『忽略 dde-dock』后，每次重启顶栏都会把底栏位置改成顶部并持久化 」的问题 (https://gitee.com/GXDE-OS/gxde-top-panel/issues/IKHSRX)
+
+ -- CharOfString <root@charofstring.cc>  Wed, 23 Sep 2026 14:24:02 -0500
+
 gxde-top-panel (1.0.8) UNRELEASED; urgency=medium
 
   [ zeqi ]
