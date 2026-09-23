@@ -576,7 +576,7 @@ void ActiveWindowControlWidget::applyCustomSettings(const CustomSettings& settin
             m_indicatorLayout->addWidget(m_appNameLabel);
             m_indicatorLayout->addWidget(m_winTitleLabel);
             m_layout->removeWidget(m_buttonWidget);
-            m_layout->insertWidget(m_layout->indexOf(m_indicatorWidget) + 1, m_buttonWidget);
+            m_layout->insertWidget(m_layout->indexOf(m_iconLabel) + 1, m_buttonWidget);
         } else {
             m_layout->removeWidget(m_buttonWidget);
             m_layout->insertWidget(1, m_buttonWidget);
