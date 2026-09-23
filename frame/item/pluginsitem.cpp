@@ -55,7 +55,10 @@ PluginsItem::PluginsItem(PluginsItemInterface *const pluginInter, const QString 
     m_centralWidget->setVisible(true);
     m_centralWidget->setObjectName(pluginInter->pluginName() + "-centralwidget");
     m_centralWidget->installEventFilter(this);
-    m_centralWidget->setGraphicsEffect(new PanelForegroundEffect(m_centralWidget));
+    // 托盘里是各应用自己的图标，不能按面板前景色统一染色（浅色模式下会被反色）；
+    // 托盘里的 symbolic 图标由托盘插件自己处理
+    if (pluginInter->pluginName() != QLatin1String("tray"))
+        m_centralWidget->setGraphicsEffect(new PanelForegroundEffect(m_centralWidget));
 
     QBoxLayout *hLayout = new QHBoxLayout;
     hLayout->addWidget(m_centralWidget);

@@ -163,6 +163,8 @@ public:
     void setFollowSystemTheme(bool followSystemTheme);
 
     bool isUseDarkDtkPanel() const;
+    // 面板实际是否为深色：跟随系统时取系统深浅，否则取「深色 UI」开关
+    bool isDarkPanel() const;
     void setUseDarkDtkPanel(bool enabled);
 
     const QString &getIconStyle() const;

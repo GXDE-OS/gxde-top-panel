@@ -131,7 +131,11 @@ MainSettingWidget::MainSettingWidget(QWidget *parent) :
     ui->newUiCheckBox->setChecked(CustomSettings::instance()->isNewUiEnabled());
     connect(ui->newUiCheckBox, &QCheckBox::toggled,
         CustomSettings::instance(), &CustomSettings::setNewUiEnabled);
-    ui->useDarkDtkPanelCheckBox->setChecked(CustomSettings::instance()->isUseDarkDtkPanel());
+    // 深色框显示面板实际深浅；跟随系统时由系统决定，禁止手动修改
+    ui->useDarkDtkPanelCheckBox->setChecked(CustomSettings::instance()->isDarkPanel());
+    ui->useDarkDtkPanelCheckBox->setEnabled(!CustomSettings::instance()->isFollowSystemTheme());
+    // 面板背景色由深浅决定，不再支持自定义颜色
+    ui->panelColorToolButton->setEnabled(false);
     connect(ui->useDarkDtkPanelCheckBox, &QCheckBox::toggled,
             CustomSettings::instance(), &CustomSettings::setUseDarkDtkPanel);
     const auto syncIconStyleBoxes = [this] {
@@ -155,7 +159,8 @@ MainSettingWidget::MainSettingWidget(QWidget *parent) :
         const QSignalBlocker newUiBlocker(ui->newUiCheckBox);
         ui->newUiCheckBox->setChecked(settings->isNewUiEnabled());
         const QSignalBlocker blocker(ui->useDarkDtkPanelCheckBox);
-        ui->useDarkDtkPanelCheckBox->setChecked(settings->isUseDarkDtkPanel());
+        ui->useDarkDtkPanelCheckBox->setChecked(settings->isDarkPanel());
+        ui->useDarkDtkPanelCheckBox->setEnabled(!settings->isFollowSystemTheme());
         const QSignalBlocker dde23Blocker(ui->useDde23IconsCheckBox);
         const QSignalBlocker dde25Blocker(ui->useDde25IconsCheckBox);
         ui->useDde23IconsCheckBox->setChecked(settings->getIconStyle() == QLatin1String("dde23"));

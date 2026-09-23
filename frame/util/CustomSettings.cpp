@@ -91,8 +91,10 @@ CustomSettings::CustomSettings() {
     });
     
     connect(DGuiApplicationHelper::instance(), &DGuiApplicationHelper::themeTypeChanged, this, [this] {
-        if (!iconStyle.isEmpty() && followSystemTheme && !useDarkDtkPanel) {
+        // 跟随系统时：图标深浅和设置界面里的深色框都要跟着变
+        if (followSystemTheme) {
             applyPanelTheme();
+            emit settingsChanged();
         }
     });
 
@@ -137,11 +139,7 @@ CustomSettings *CustomSettings::instance() {
 }
 
 qreal CustomSettings::getPanelOpacity() const {
-    if (this->isUseDarkDtkPanel() || this->isFollowSystemTheme()) {
-        return 80;
-    } else {
-        return panelOpacity;
-    }
+    return panelOpacity;
 }
 
 void CustomSettings::setPanelOpacity(qreal panelOpacity) {
@@ -150,20 +148,20 @@ void CustomSettings::setPanelOpacity(qreal panelOpacity) {
 }
 
 const QColor &CustomSettings::getPanelBgColor() const {
-    if (this->isUseDarkDtkPanel() || this->isFollowSystemTheme()) {
-        switch (DGuiApplicationHelper::instance()->themeType()) {
-            case Dtk::Gui::DGuiApplicationHelper::DarkType:
-                return this->defaultDarkColor;
-            case Dtk::Gui::DGuiApplicationHelper::LightType:
-                return this->defaultLightColor;
-        }
+    // 背景色完全由深浅决定：跟随系统时取系统深浅，否则取「深色 UI」开关
+    return isDarkPanel() ? this->defaultDarkColor : this->defaultLightColor;
+}
+
+bool CustomSettings::isDarkPanel() const {
+    if (followSystemTheme) {
+        // 跟随系统时调色板类型为 UnknownType，themeType() 反映的就是系统深浅
+        return DGuiApplicationHelper::instance()->themeType() == DGuiApplicationHelper::DarkType;
     }
-    return panelBgColor;
+    return useDarkDtkPanel;
 }
 
 void CustomSettings::setPanelBgColor(const QColor &panelBgColor) {
     CustomSettings::panelBgColor = panelBgColor;
-    applyPanelTheme();
     emit settingsChanged();
 }
 
@@ -385,11 +383,6 @@ void CustomSettings::readSettings() {
     this->followSystemTheme = settings.value("panel/followSystemTheme", this->isFollowSystemTheme()).toBool();
     useDarkDtkPanel = settings.value("panel/useDarkDtkPanel", false).toBool();
     iconStyle = settings.value("panel/iconStyle", QString()).toString();
-    if (useDarkDtkPanel && followSystemTheme) {
-        followSystemTheme = false;
-        settings.setValue("panel/followSystemTheme", false);
-        settings.sync();
-    }
     newUiEnabled = settings.value("panel/newUiEnabled", true).toBool();
     clock12Hour = settings.value("clock/use12Hour", false).toBool();
     customClockEnabled = settings.value("clock/customEnabled", false).toBool();
@@ -505,12 +498,12 @@ bool CustomSettings::isFollowSystemTheme() const {
 }
 
 void CustomSettings::setFollowSystemTheme(bool followSystemTheme) {
-    if (CustomSettings::followSystemTheme == followSystemTheme
-        && !(followSystemTheme && useDarkDtkPanel))
+    if (CustomSettings::followSystemTheme == followSystemTheme)
         return;
+    // 关闭跟随时，手动开关先接上系统当前的深浅，避免面板突然跳色
+    if (!followSystemTheme)
+        useDarkDtkPanel = isDarkPanel();
     CustomSettings::followSystemTheme = followSystemTheme;
-    if (followSystemTheme)
-        useDarkDtkPanel = false;
     applyPanelTheme();
     emit settingsChanged();
 }
@@ -540,11 +533,10 @@ bool CustomSettings::isUseDarkDtkPanel() const {
 }
 
 void CustomSettings::setUseDarkDtkPanel(bool enabled) {
-    if (useDarkDtkPanel == enabled && !(enabled && followSystemTheme))
+    // 跟随系统主题时由系统决定深浅，手动开关不生效（设置界面里也是禁用的）
+    if (followSystemTheme || useDarkDtkPanel == enabled)
         return;
     useDarkDtkPanel = enabled;
-    if (enabled)
-        followSystemTheme = false;
     applyPanelTheme();
     emit settingsChanged();
 }
@@ -585,21 +577,18 @@ static void ensureBundledIconThemePath() {
 
 void CustomSettings::applyPanelTheme() {
     auto *helper = DGuiApplicationHelper::instance();
-    const bool darkPanel = useDarkDtkPanel
-        || (!followSystemTheme && panelBgColor.lightness() < 128);
-    helper->setPaletteType(followSystemTheme && !useDarkDtkPanel
+    // 跟随系统时交给 DTK（UnknownType），否则按「深色 UI」开关固定深浅
+    helper->setPaletteType(followSystemTheme
                                ? DGuiApplicationHelper::UnknownType
-                               : (darkPanel ? DGuiApplicationHelper::DarkType
-                                            : DGuiApplicationHelper::LightType));
+                               : (useDarkDtkPanel ? DGuiApplicationHelper::DarkType
+                                                  : DGuiApplicationHelper::LightType));
+    const bool darkPanel = isDarkPanel();
     // Set the process-local icon theme so plugins using QIcon::fromTheme also
     // select the dark variants, without changing the desktop's icon theme.
     QString iconTheme = darkPanel ? QStringLiteral("gxde-dark") : systemIconTheme;
     if (iconStyle == QLatin1String("dde23") || iconStyle == QLatin1String("dde25")) {
         ensureBundledIconThemePath();
-        const bool dark = followSystemTheme && !useDarkDtkPanel
-            ? helper->themeType() == DGuiApplicationHelper::DarkType
-            : darkPanel;
-        iconTheme = iconStyle + (dark ? QStringLiteral("-dark") : QStringLiteral("-light"));
+        iconTheme = iconStyle + (darkPanel ? QStringLiteral("-dark") : QStringLiteral("-light"));
     }
     if (QIcon::themeName() != iconTheme) {
         QIcon::setThemeName(iconTheme);
