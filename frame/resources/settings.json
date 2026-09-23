@@ -1,0 +1,66 @@
+{
+    "groups": [
+        {
+            "key": "options",
+            "name": "Preference",
+            "groups": [
+                {
+                    "key": "general",
+                    "name": "General",
+                    "options": [
+                        { "key": "panelColor", "type": "colorpicker", "name": "Panel Color", "default": "#000000" },
+                        { "key": "fontColor", "type": "colorpicker", "name": "Font Color", "default": "#ffffff" },
+                        { "key": "opacity", "type": "spinbutton", "name": "Panel Alpha (0~255)", "min": 0, "max": 255, "default": 80 },
+                        { "key": "followSystemTheme", "type": "gxdecheckbox", "name": "Follow System Theme", "default": true },
+                        { "key": "newUi", "type": "gxdecheckbox", "name": "Enable new UI", "default": true },
+                        { "key": "darkPanel", "type": "gxdecheckbox", "name": "Use dark DTK panel", "default": false },
+                        { "key": "dde23Icons", "type": "gxdecheckbox", "name": "Use DDE V23 icon style", "default": false },
+                        { "key": "dde25Icons", "type": "gxdecheckbox", "name": "Use DDE V25 icon style", "default": false },
+                        { "key": "ignoreDock", "type": "gxdecheckbox", "name": "Ignore Dock", "default": false },
+                        { "key": "menuOnHover", "type": "gxdecheckbox", "name": "Show Menu on Hover Only", "default": false },
+                        { "key": "dragToMove", "type": "gxdecheckbox", "name": "Drag to Move", "default": false },
+                        { "key": "hideTitlebar", "type": "gxdecheckbox", "name": "Hide titlebar when maximized [reboot or login out]", "default": false }
+                    ]
+                },
+                {
+                    "key": "buttons",
+                    "name": "Control Buttons",
+                    "options": [
+                        { "key": "showButtons", "type": "gxdecheckbox", "name": "Show Control Buttons", "default": true },
+                        { "key": "closeIcon", "type": "iconpicker", "name": "Close Button", "default": "" },
+                        { "key": "unmaxIcon", "type": "iconpicker", "name": "Unmax Button", "default": "" },
+                        { "key": "minIcon", "type": "iconpicker", "name": "Minimize Button", "default": "" },
+                        { "key": "buttonsOnRight", "type": "gxdecheckbox", "name": "Buttons on Right", "default": false },
+                        { "key": "buttonHighlight", "type": "gxdecheckbox", "name": "Buttons with highlight", "default": true },
+                        { "key": "highlightColor", "type": "colorpicker", "name": "Buttons highlight color", "default": "#9d2933" }
+                    ]
+                },
+                {
+                    "key": "appIcons",
+                    "name": "App Icons",
+                    "options": [
+                        { "key": "defaultIcon", "type": "iconpicker", "name": "Default Icon", "default": "" },
+                        { "key": "alwaysDefaultIcon", "type": "gxdecheckbox", "name": "Always use default icon", "default": false },
+                        { "key": "appNameInsteadIcon", "type": "gxdecheckbox", "name": "App name instead of icon", "default": true },
+                        { "key": "logoWithAppName", "type": "gxdecheckbox", "name": "Show logo with app name", "default": true }
+                    ]
+                }
+            ]
+        },
+        {
+            "key": "clock",
+            "name": "Clock",
+            "groups": [
+                {
+                    "key": "format",
+                    "name": "Customize clock format",
+                    "options": [
+                        { "key": "customEnabled", "type": "gxdecheckbox", "name": "Customize clock format", "default": false },
+                        { "key": "use12Hour", "type": "gxdecheckbox", "name": "Use 12-hour clock", "default": false },
+                        { "key": "format", "type": "clockformat", "name": "", "default": "" }
+                    ]
+                }
+            ]
+        }
+    ]
+}

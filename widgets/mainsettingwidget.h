@@ -1,50 +1,29 @@
 #ifndef MAINSETTINGWIDGET_H
 #define MAINSETTINGWIDGET_H
 
-#include <QWidget>
+#include <DSettingsDialog>
 
-namespace Ui {
-class MainSettingWidget;
+namespace Dtk {
+namespace Core {
+class DSettings;
+}
 }
 
-class MainSettingWidget : public QWidget
+// 基于 DTK DSettingsDialog 的设置窗，标题栏带菜单（关于为 DTK 标准关于窗）和关闭按钮。设置项由
+// :/settings.json 描述，读写通过自定义后端直接映射到 CustomSettings，
+// 配置文件格式保持不变。
+class MainSettingWidget : public Dtk::Widget::DSettingsDialog
 {
     Q_OBJECT
 
 public:
     explicit MainSettingWidget(QWidget *parent = nullptr);
-    ~MainSettingWidget();
+    ~MainSettingWidget() override;
 
 private:
-    Ui::MainSettingWidget *ui;
-    QMovie *movie;
-protected:
-    void closeEvent(QCloseEvent *event) override;
+    void registerCustomWidgets();
 
-protected:
-    void hideEvent(QHideEvent *event) override;
-
-protected:
-    void showEvent(QShowEvent *event) override;
-
-private:
-
-    void opacityValueChanged(int value);
-    void panelColorButtonClicked();
-    void fontColorButtonClicked();
-    void closeButtonClicked();
-    void closeResetButtonClicked();
-
-    void unmaxButtonClicked();
-    void unmaxResetButtonClicked();
-
-    void minButtonClicked();
-    void minResetButtonClicked();
-
-    void defaultButtonClicked();
-    void defaultResetButtonClicked();
-
-    void buttonHighlightColorButtonClicked();
+    Dtk::Core::DSettings *m_settings = nullptr;
 };
 
 #endif // MAINSETTINGWIDGET_H

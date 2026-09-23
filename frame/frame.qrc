@@ -1,6 +1,7 @@
 <RCC>
     <qresource prefix="/">
         <file>qss/frame.qss</file>
+        <file alias="settings.json">resources/settings.json</file>
     </qresource>
     <qresource prefix="/icons">
         <file alias="close.svg">resources/icons/close.svg</file>
@@ -12,7 +13,9 @@
         <file alias="linux.svg">resources/icons/linux.svg</file>
         <file alias="linux-light.svg">resources/icons/linux-light.svg</file>
         <file alias="reset.svg">resources/icons/reset.svg</file>
+        <file alias="reset-dark.svg">resources/icons/reset-dark.svg</file>
         <file alias="config.svg">resources/icons/config.svg</file>
+        <file alias="config-dark.svg">resources/icons/config-dark.svg</file>
         <file alias="doge.gif">resources/icons/doge.gif</file>
     </qresource>
 </RCC>

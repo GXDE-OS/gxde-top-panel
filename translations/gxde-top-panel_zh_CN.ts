@@ -182,8 +182,7 @@ If anything strange happens, please uncheck this, and restart the dde-dock.</sou
     <message>
         <location filename="../widgets/mainsettingwidget.ui" line="766"/>
         <source>Show Control Buttons</source>
-        <translatorcomment>显示控制按钮</translatorcomment>
-        <translation></translation>
+        <translation>显示控制按钮</translation>
     </message>
     <message>
         <location filename="../widgets/mainsettingwidget.ui" line="829"/>
