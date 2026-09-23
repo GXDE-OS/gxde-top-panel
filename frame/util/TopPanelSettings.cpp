@@ -3,6 +3,8 @@
 //
 
 #include "TopPanelSettings.h"
+#include <QDBusConnectionInterface>
+#include <QDBusConnection>
 #include "WaylandMenu.h"
 #include "utils.h"
 #include <QApplication>
@@ -208,7 +210,11 @@ void TopPanelSettings::resetFrontendGeometry()
     // origin & moves all X11 panels on the top of primary one, causing
     // the top panel looking wired on X11 dual screen.
     m_frontendRect = QRect(p.x(), p.y(), w, h);
-    if (CustomSettings::instance()->isIgnoreDock()) {
+
+    // https://gitee.com/GXDE-OS/gxde-top-panel/issues/IKHSRX
+    if (CustomSettings::instance()->isIgnoreDock()
+            && !QDBusConnection::sessionBus().interface()->isServiceRegistered(
+                   QStringLiteral("com.deepin.dde.Dock"))) {
         m_dockInter->setPosition(Top);
         m_dockInter->setHideMode(KeepShowing);
         m_dockInter->SetFrontendWindowRect(p.x(), p.y(), w, h);
