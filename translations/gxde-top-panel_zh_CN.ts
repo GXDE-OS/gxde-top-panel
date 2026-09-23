@@ -30,6 +30,7 @@
 </context>
 <context>
     <name>MainSettingWidget</name>
+    <message><source>Use 12-hour clock</source><translation>12 小时制</translation></message>
     <message><source>Clock</source><translation>时钟</translation></message>
     <message><source>Customize clock format</source><translation>自定义时钟格式</translation></message>
     <message><source>Below is a preview of your format:</source><translation>下方是您的格式预览：</translation></message>

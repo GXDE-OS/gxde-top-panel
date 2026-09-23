@@ -33,5 +33,20 @@ int main()
     check(ClockFormat::render("YYYYMMDD", date, en), "20240229");
     check(ClockFormat::render("hh:mm:ss", QDateTime(QDate(2025, 1, 1), QTime(0, 0, 0)), en), "00:00:00");
     check(ClockFormat::render(R"(\Y\Y\Y\Y YYYY)", date, en), "YYYY 2024");
+    for (int hour : {0, 1, 11, 12, 13, 23}) {
+        const QDateTime time(QDate(2024, 2, 29), QTime(hour, 8, 9));
+        const int expected = hour % 12 == 0 ? 12 : hour % 12;
+        check(ClockFormat::render("h hh:mm:ss", time, en, true),
+              QString("%1 %2:08:09 %3").arg(expected).arg(expected, 2, 10, QLatin1Char('0')).arg(hour < 12 ? "A.M." : "P.M."));
+        check(ClockFormat::render("hh", time, en, false),
+              QString("%1").arg(hour, 2, 10, QLatin1Char('0')));
+        check(ClockFormat::render(R"(\h)", time, en, true), "h");
+    }
+    const QDateTime evening(QDate(2024, 2, 29), QTime(23, 17, 9));
+    check(ClockFormat::render("hh:mm", evening, en, true), "11:17 P.M.");
+    check(ClockFormat::render("hh:mm\\nMM-DD", evening, en, true), "11:17 P.M.\n02-29");
+    check(ClockFormat::render("MM-DD\\nhh:mm:ss", evening, en, true), "02-29\n11:17:09 P.M.");
+    check(ClockFormat::render("hh:mm MM-DD", evening, en, true), "11:17 P.M. 02-29");
+    check(ClockFormat::render("MM-DD", evening, en, true), "02-29");
     return 0;
 }

@@ -383,7 +383,8 @@ void PluginsItem::updateClock() {
     m_centralWidget->setVisible(!enabled && !isDragging());
     m_clockLabel->setVisible(enabled && !isDragging());
     m_clockText = enabled ? ClockFormat::render(CustomSettings::instance()->getClockFormat(),
-                                               QDateTime::currentDateTime()) : QString();
+        QDateTime::currentDateTime(), QLocale(),
+        CustomSettings::instance()->isClock12Hour()) : QString();
     m_clockLabel->setText(m_clockText);
     m_clockLabel->setFont(clockFont());
     QPalette palette = m_clockLabel->palette();

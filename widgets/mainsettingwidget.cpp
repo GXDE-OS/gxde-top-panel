@@ -21,6 +21,8 @@ MainSettingWidget::MainSettingWidget(QWidget *parent) :
     auto *clockLayout = new QVBoxLayout(clockPage);
     auto *customClock = new QCheckBox(tr("Customize clock format"), clockPage);
     customClock->setObjectName(QStringLiteral("customClockCheckBox"));
+    auto *clock12Hour = new QCheckBox(tr("Use 12-hour clock"), clockPage);
+    clock12Hour->setObjectName(QStringLiteral("clock12HourCheckBox"));
     auto *clockFormat = new QLineEdit(clockPage);
     clockFormat->setObjectName(QStringLiteral("clockFormatEdit"));
     clockFormat->setMaxLength(256);
@@ -36,15 +38,19 @@ MainSettingWidget::MainSettingWidget(QWidget *parent) :
     clockPreview->setAlignment(Qt::AlignCenter);
     clockPreview->setMinimumHeight(64);
     clockLayout->addWidget(customClock);
+    clockLayout->addWidget(clock12Hour);
     clockLayout->addWidget(clockFormat);
     clockLayout->addWidget(clockHelp);
     clockLayout->addWidget(new QLabel(tr("Below is a preview of your format:"), clockPage));
     clockLayout->addWidget(clockPreview);
     clockLayout->addStretch();
     ui->tabWidget->insertTab(1, clockPage, tr("Clock"));
-    auto syncClock = [customClock, clockFormat] {
+    auto syncClock = [customClock, clockFormat, clock12Hour] {
         const auto *settings = CustomSettings::instance();
         const QSignalBlocker enabledBlocker(customClock);
+        const QSignalBlocker hourBlocker(clock12Hour);
+        clock12Hour->setChecked(settings->isClock12Hour());
+        clock12Hour->setEnabled(settings->isCustomClockEnabled());
         const QSignalBlocker formatBlocker(clockFormat);
         customClock->setChecked(settings->isCustomClockEnabled());
         if (ClockFormat::normalize(clockFormat->text()) != settings->getClockFormat()) {
@@ -66,11 +72,14 @@ MainSettingWidget::MainSettingWidget(QWidget *parent) :
     syncClock();
     connect(CustomSettings::instance(), &CustomSettings::settingsChanged, clockPage, syncClock);
     connect(customClock, &QCheckBox::toggled, CustomSettings::instance(), &CustomSettings::setCustomClockEnabled);
+    connect(clock12Hour, &QCheckBox::toggled, CustomSettings::instance(), &CustomSettings::setClock12Hour);
     connect(clockFormat, &QLineEdit::textEdited, CustomSettings::instance(), &CustomSettings::setClockFormat);
     auto updateClockPreview = [clockFormat, clockPreview] {
-        clockPreview->setText(ClockFormat::render(clockFormat->text(), QDateTime::currentDateTime()));
+        clockPreview->setText(ClockFormat::render(clockFormat->text(), QDateTime::currentDateTime(),
+            QLocale(), CustomSettings::instance()->isClock12Hour()));
     };
     connect(clockFormat, &QLineEdit::textChanged, clockPage, updateClockPreview);
+    connect(CustomSettings::instance(), &CustomSettings::settingsChanged, clockPage, updateClockPreview);
     auto *clockTimer = new QTimer(clockPage);
     clockTimer->setInterval(1000);
     connect(clockTimer, &QTimer::timeout, clockPage, updateClockPreview);

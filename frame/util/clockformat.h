@@ -34,14 +34,27 @@ inline QString normalize(QString pattern)
 }
 
 inline QString render(const QString &pattern, const QDateTime &now,
-                      const QLocale &locale = QLocale())
-{
+        const QLocale &locale = QLocale(), bool use12Hour = false) {
     const QString input = normalize(pattern);
     QString result;
+    bool lineHasHour = false;
+    qsizetype timeEnd = -1;
+    auto finishTimeLine = [&] {
+        if (use12Hour && lineHasHour) {
+            result.insert(timeEnd, now.time().hour() < 12
+                ? QStringLiteral(" A.M.") : QStringLiteral(" P.M."));
+        }
+        lineHasHour = false;
+        timeEnd = -1;
+    };
     for (int i = 0; i < input.size(); ++i) {
         const QChar c = input[i];
         if (c == QLatin1Char('\\') && i + 1 < input.size()) {
             const QChar escaped = input[++i];
+            if (escaped == QLatin1Char('n')) {
+                finishTimeLine();
+            }
+
             result += escaped == QLatin1Char('n') ? QLatin1Char('\n') : escaped;
             continue;
         }
@@ -54,7 +67,12 @@ inline QString render(const QString &pattern, const QDateTime &now,
         if (c == QLatin1Char('Y')) value = now.date().year();
         else if (c == QLatin1Char('M')) value = now.date().month();
         else if (c == QLatin1Char('D')) value = now.date().day();
-        else if (c == QLatin1Char('h')) value = now.time().hour();
+        else if (c == QLatin1Char('h')) {
+            value = now.time().hour();
+            if (use12Hour) {
+                value = (value + 11) % 12 + 1;
+            }
+        }
         else if (c == QLatin1Char('m')) value = now.time().minute();
         else if (c == QLatin1Char('s')) value = now.time().second();
         if (value >= 0) {
@@ -69,10 +87,16 @@ inline QString render(const QString &pattern, const QDateTime &now,
                     width = 4;
             }
             result += QStringLiteral("%1").arg(value, width, 10, QLatin1Char('0'));
+            if (c == QLatin1Char('h')) {
+                lineHasHour = true;
+            } if (c == QLatin1Char('h') || c == QLatin1Char('m') || c == QLatin1Char('s')) {
+                timeEnd = result.size();
+            }
             i += count - 1;
         } else
             result += c;
     }
+    finishTimeLine();
     return result;
 }
 }

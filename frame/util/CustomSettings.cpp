@@ -295,6 +295,7 @@ void CustomSettings::saveSettings() {
     settings.setValue("panel/useDarkDtkPanel", useDarkDtkPanel);
     settings.setValue("panel/newUiEnabled", newUiEnabled);
     settings.setValue("clock/customEnabled", customClockEnabled);
+    settings.setValue("clock/use12Hour", clock12Hour);
     settings.setValue("clock/format", clockFormat);
     settings.setValue("windowControl/fontColor", this->activeFontColor);
     settings.setValue("windowControl/closeIcon", this->activeCloseIconPath);
@@ -352,6 +353,7 @@ void CustomSettings::readSettings() {
         settings.sync();
     }
     newUiEnabled = settings.value("panel/newUiEnabled", true).toBool();
+    clock12Hour = settings.value("clock/use12Hour", false).toBool();
     customClockEnabled = settings.value("clock/customEnabled", false).toBool();
     clockFormat = ClockFormat::normalize(settings.value("clock/format", QStringLiteral("hh:mm\\nMM-DD ddd")).toString());
     this->allowDragWindowWhenMax = settings.value("windowControl/allowDragWindowWhenMax", this->allowDragWindowWhenMax).toBool();
@@ -535,5 +537,14 @@ void CustomSettings::setClockFormat(const QString &format) {
     if (clockFormat == normalized)
         return;
     clockFormat = normalized;
+    emit settingsChanged();
+}
+
+void CustomSettings::setClock12Hour(bool enabled) {
+    if (clock12Hour == enabled) {
+        return;
+    }
+
+    clock12Hour = enabled;
     emit settingsChanged();
 }

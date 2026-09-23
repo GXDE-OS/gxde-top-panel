@@ -87,6 +87,8 @@ public:
     void setDefaultShowGlobalMenuOnHover();
 
     bool isCustomClockEnabled() const { return customClockEnabled; }
+    bool isClock12Hour() const { return clock12Hour; }
+    void setClock12Hour(bool enabled);
     QString getClockFormat() const { return clockFormat; }
     void setCustomClockEnabled(bool enabled);
     void setClockFormat(const QString &format);
@@ -125,6 +127,7 @@ private:
 private:
     bool newUiEnabled = true;
     bool customClockEnabled = false;
+    bool clock12Hour = false;
     QString clockFormat = QStringLiteral("hh:mm\\nMM-DD ddd");
 
     // panel
