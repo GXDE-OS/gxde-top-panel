@@ -116,7 +116,7 @@ h代表时；m代表分；s代表秒
     <message>
         <location filename="../widgets/mainsettingwidget.cpp" line="53"/>
         <source>Panel Alpha (0~255)</source>
-        <translation>背景色 Alpha 值【0~255】</translation>
+        <translation>背景色 Alpha 值 (0~255)</translation>
     </message>
     <message>
         <location filename="../widgets/mainsettingwidget.cpp" line="52"/>
@@ -159,7 +159,7 @@ If anything strange happens, please uncheck this, and restart the dde-dock.</sou
     <message>
         <location filename="../widgets/mainsettingwidget.cpp" line="62"/>
         <source>Hide titlebar when maximized [reboot or login out]</source>
-        <translation>窗口最大化时隐藏标题栏【重启或注销后生效】</translation>
+        <translation>窗口最大化时隐藏标题栏 (重启或注销后生效)</translation>
     </message>
     <message>
         <location filename="../widgets/mainsettingwidget.cpp" line="63"/>
