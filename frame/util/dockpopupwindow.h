@@ -23,6 +23,7 @@
 #define DOCKPOPUPWINDOW_H
 
 #include <DArrowRectangle>
+#include <QPainterPath>
 #include <DRegionMonitor>
 #include <DWindowManagerHelper>
 
@@ -55,6 +56,7 @@ signals:
     void unusedSignal();
 
 protected:
+    void paintEvent(QPaintEvent *e) override;
     void showEvent(QShowEvent *e);
     void enterEvent(QEnterEvent *e);
     bool eventFilter(QObject *o, QEvent *e);
@@ -65,6 +67,8 @@ private slots:
     void ensureRaised();
 
 private:
+    void updateWaylandEffects();
+    QPainterPath m_waylandShape;
     bool m_model;
     QPoint m_lastPoint;
 
