@@ -125,6 +125,14 @@ int main(int argc, char *argv[]) {
     }
     app.installTranslator(&translator);
 
+    // 插件（音量、托盘等）源自 dde-dock / gxde-dock，界面文字用的是它们的翻译；
+    // 插件包本身不带翻译文件，这里加载系统里 dock 的翻译
+    QTranslator pluginTranslator;
+    if (pluginTranslator.load("dde-dock_" + locale, "/usr/share/dde-dock/translations")
+            || pluginTranslator.load("gxde-dock_" + locale, "/usr/share/gxde-dock/translations")) {
+        app.installTranslator(&pluginTranslator);
+    }
+
     app.setOrganizationName("GXDE");
     app.setApplicationName("gxde-top-panel");
     app.setApplicationDisplayName("GXDE Top Panel");
