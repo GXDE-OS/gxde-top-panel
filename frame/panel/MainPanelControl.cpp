@@ -247,6 +247,8 @@ void MainPanelControl::calcuDockIconSize(int w, int h, PluginsItem *trashPlugin,
         tray_item_size = std::min(w - 20, h);
     }
 
+    tray_item_size = qMin(tray_item_size, 24);
+
     if (tray_item_size < 20)
         return;
 
@@ -268,21 +270,26 @@ void MainPanelControl::calcuDockIconSize(int w, int h, PluginsItem *trashPlugin,
             keyboardPlugin->setFixedSize(tray_item_size, tray_item_size);
     }
 
+    // 方形状态图标类插件：尺寸一律钉在 tray_item_size 上，
+    // 不信任 sizeHint —— 待机唤醒等场景下 sizeHint 会瞬时膨胀，
+    // 被 setFixedSize 锁住后图标就一直是放大的
+    static const QStringList squareIconPlugins {
+        "power", "sound", "network", "overlay-warning", "AiAssistant",
+    };
+
     if ((m_position == Position::Top) || (m_position == Position::Bottom)) {
         // 三方插件
         for (int i = 0; i < m_pluginLayout->count(); ++ i) {
             PluginsItem *pItem = static_cast<PluginsItem *>(m_pluginLayout->itemAt(i)->widget());
             if (pItem != trashPlugin && pItem != shutdownPlugin && pItem != keyboardPlugin) {
+                if (squareIconPlugins.contains(pItem->pluginName())) {
+                    pItem->setFixedSize(tray_item_size, h);
+                    continue;
+                }
                 // 部分插件（如 power）中心控件未实现 sizeHint，直接取 sizeHint().width() 会为 0，
                 // 拖动后会被压成 0 宽而消失，因此必须保证不小于最小尺寸。
                 int fixedW = qMax(qMax(pItem->sizeHint().width(), pItem->minimumWidth()), 20);
-                if (pItem->pluginName() == "datetime"){
-                    pItem->setFixedSize(fixedW, h);
-                } else if (pItem->pluginName() == "AiAssistant"){
-                    pItem->setFixedSize(tray_item_size, h);
-                } else {
-                    pItem->setFixedSize(fixedW, h);
-                }
+                pItem->setFixedSize(fixedW, h);
             }
         }
     } else {
@@ -290,14 +297,12 @@ void MainPanelControl::calcuDockIconSize(int w, int h, PluginsItem *trashPlugin,
         for (int i = 0; i < m_pluginLayout->count(); ++ i) {
             PluginsItem *pItem = static_cast<PluginsItem *>(m_pluginLayout->itemAt(i)->widget());
             if (pItem != trashPlugin && pItem != shutdownPlugin && pItem != keyboardPlugin) {
-                int fixedH = qMax(qMax(pItem->sizeHint().height(), pItem->minimumHeight()), 20);
-                if (pItem->pluginName() == "datetime"){
-                    pItem->setFixedSize(w, fixedH);
-                } else if (pItem->pluginName() == "AiAssistant"){
+                if (squareIconPlugins.contains(pItem->pluginName())) {
                     pItem->setFixedSize(tray_item_size, tray_item_size);
-                } else {
-                    pItem->setFixedSize(w, fixedH);
+                    continue;
                 }
+                int fixedH = qMax(qMax(pItem->sizeHint().height(), pItem->minimumHeight()), 20);
+                pItem->setFixedSize(w, fixedH);
             }
         }
     }
