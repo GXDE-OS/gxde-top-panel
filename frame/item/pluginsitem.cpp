@@ -327,11 +327,15 @@ void PluginsItem::mouseClicked()
 {
     const QString command = m_pluginInter->itemCommand(m_itemKey);
     if (!command.isEmpty()) {
-        QProcess *proc = new QProcess(this);
-
-        connect(proc, &QProcess::finished, proc, &QProcess::deleteLater);
-
-        proc->startDetached(command);
+        QStringList arguments = QProcess::splitCommand(command);
+        if (arguments.isEmpty())
+            return;
+        QProcess process;
+        process.setProgram(arguments.takeFirst());
+        process.setArguments(arguments);
+        if (!process.startDetached())
+            qWarning() << "Failed to launch plugin command:" << pluginName()
+                       << process.errorString();
         return;
     }
 
