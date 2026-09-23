@@ -57,9 +57,6 @@ TopPanelSettings::TopPanelSettings(DockItemManager *itemManager, QScreen *screen
     QAction *restartAction = new QAction(tr("Restart"), this);
     m_settingsMenu.addAction(restartAction);
 
-    WaylandMenu::installStyle(&m_settingsMenu);
-    WaylandMenu::installStyle(m_hideSubMenu);
-
     connect(&m_settingsMenu, &QMenu::triggered, this, &TopPanelSettings::menuActionClicked);
     connect(settingAction, &QAction::triggered, this, &TopPanelSettings::settingActionClicked);
     connect(restartAction, &QAction::triggered, this, [this] {

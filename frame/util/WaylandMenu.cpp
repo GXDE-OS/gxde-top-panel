@@ -6,124 +6,31 @@
 #include <KWindowEffects>
 #include <LayerShellQt/Window>
 #include <QAction>
-#include <QImage>
 #include <QMenu>
-#include <QPainter>
 #include <QPainterPath>
 #include <QPalette>
 #include <QPointer>
-#include <QProxyStyle>
 #include <QRegion>
 #include <QScreen>
-#include <QStyleFactory>
-#include <QStyleOption>
 #include <QWindow>
-
-QT_BEGIN_NAMESPACE
-void qt_blurImage(QPainter* painter, QImage& blurImage, qreal radius,
-    bool quality, bool alphaOnly, int transposed = 0);
-QT_END_NAMESPACE
 
 namespace {
 
 constexpr int MenuRadius = 8;
-// The Treeland personalization protocol blurs the complete Wayland surface.
-// Keep that surface tight to the menu so the blur cannot extend past it.
-constexpr int ShadowMargin = 0;
-constexpr int ShadowBlur = 7;
-constexpr int ShadowOffsetY = 3;
 constexpr qreal MenuBackgroundOpacity = 0.72;
 constexpr auto PlatformHandleName = "wayland-menu-platform-handle";
 constexpr auto LayerXProperty = "gxde-wayland-menu-layer-x";
 constexpr auto LayerYProperty = "gxde-wayland-menu-layer-y";
 constexpr auto SubmenuHookProperty = "gxde-wayland-submenu-hook";
-constexpr auto StyleInstalledProperty = "gxde-dtk-menu-style-installed";
-constexpr auto StyleUnavailableProperty = "gxde-dtk-menu-style-unavailable";
 
-class DtkMenuStyle final : public QProxyStyle {
-public:
-    explicit DtkMenuStyle(QStyle* baseStyle) : QProxyStyle(baseStyle) {}
-
-    void drawPrimitive(PrimitiveElement element, const QStyleOption* option,
-            QPainter* painter,
-                const QWidget* widget = nullptr) const override {
-        if (element == PE_PanelMenu) {
-            drawMenuPanel(painter, widget);
-            return;
-        }
-
-        if (element == PE_FrameMenu) {
-            return;
-        }
-        QProxyStyle::drawPrimitive(element, option, painter, widget);
-    }
-
-private:
-    static void drawMenuPanel(QPainter* painter, const QWidget* widget) {
-        if (!painter || !widget) {
-            return;
-        }
-
-        const QMargins margins = widget->contentsMargins();
-        const QRectF panelRect(
-            margins.left(), margins.top(),
-            widget->width() - margins.left() - margins.right(),
-            widget->height() - margins.top() - margins.bottom());
-
-        if (panelRect.isEmpty()) {
-            return;
-        }
-
-        QPainterPath panelPath;
-        panelPath.addRoundedRect(panelRect, MenuRadius, MenuRadius);
-
-        painter->save();
-        painter->setCompositionMode(QPainter::CompositionMode_Source);
-        painter->fillRect(widget->rect(), Qt::transparent);
-        painter->restore();
-
-        QImage shadow(widget->size(), QImage::Format_ARGB32_Premultiplied);
-        shadow.fill(Qt::transparent);
-
-        {
-            QPainter shadowPainter(&shadow);
-            shadowPainter.setRenderHint(QPainter::Antialiasing);
-            shadowPainter.fillPath(
-                panelPath.translated(0, ShadowOffsetY), QColor(0, 0, 0));
-        }
-
-        painter->save();
-        QPainterPath outside;
-        outside.addRect(widget->rect());
-        painter->setClipPath(outside.subtracted(panelPath));
-        painter->setOpacity(0.18);
-        qt_blurImage(painter, shadow, ShadowBlur * 2.0, true, true);
-        painter->restore();
-
-        QColor background = widget->palette().color(QPalette::Window);
-        background.setAlphaF(MenuBackgroundOpacity);
-        painter->setRenderHint(QPainter::Antialiasing);
-        painter->fillPath(panelPath, background);
-        painter->strokePath(panelPath, QPen(QColor(0, 0, 0, 20), 1));
-    }
-};
-
-QRect panelRect(const QMenu* menu) {
-    if (!menu) {
-        return {};
-    }
-    const QMargins margins = menu->contentsMargins();
-    return menu->rect().marginsRemoved(margins);
-}
-
-QRegion roundedRegion(const QMenu* menu) {
-    const QRect rect = panelRect(menu);
-    if (rect.isEmpty()) {
+QRegion roundedRegion(const QMenu *menu)
+{
+    if (!menu || menu->width() <= 0 || menu->height() <= 0) {
         return {};
     }
 
     QPainterPath path;
-    path.addRoundedRect(QRectF(rect), MenuRadius, MenuRadius);
+    path.addRoundedRect(QRectF(menu->rect()), MenuRadius, MenuRadius);
     return QRegion(path.toFillPolygon().toPolygon());
 }
 
@@ -142,49 +49,23 @@ QPoint boundedPosition(QMenu *menu, QScreen *screen, const QPoint &position)
 
 namespace WaylandMenu {
 
-bool installStyle(QMenu* menu) {
-    if (!menu) {
-        return false;
-    }
-    if (menu->property(StyleInstalledProperty).toBool()) {
-        return true;
-    }
-    if (menu->property(StyleUnavailableProperty).toBool()) {
-        return false;
-    }
-
-    QStyle *baseStyle = QStyleFactory::create(QStringLiteral("dlight2"));
-    if (!baseStyle) {
-        menu->setProperty(StyleUnavailableProperty, true);
-        return false;
-    }
-
-    // Once DTK2 style is redy, use it to override config
-    menu->setStyleSheet(QString());
-    if (!Utils::isWayland()) {
-        baseStyle->setParent(menu);
-        menu->setStyle(baseStyle);
-        menu->setProperty(StyleInstalledProperty, true);
-        return true;
-    }
-
-    auto* style = new DtkMenuStyle(baseStyle);
-    style->setParent(menu);
-    menu->setStyle(style);
-    menu->setProperty(StyleInstalledProperty, true);
-    menu->setAttribute(Qt::WA_TranslucentBackground);
-    menu->setContentsMargins(ShadowMargin, ShadowMargin,
-        ShadowMargin, ShadowMargin);
-    return true;
-}
-
 void updateEffects(QMenu *menu)
 {
-    if (!installStyle(menu) || !Utils::isWayland()) {
+    if (!menu || !Utils::isWayland()) {
         return;
     }
 
     menu->setAttribute(Qt::WA_TranslucentBackground);
+
+    const QColor background = menu->palette().color(QPalette::Window);
+    const QColor border = menu->palette().color(QPalette::Mid);
+    menu->setStyleSheet(QStringLiteral(
+        "QMenu { background-color: rgba(%1, %2, %3, %8); "
+        "border: 1px solid rgba(%4, %5, %6, 110); "
+        "border-radius: %7px; padding: 4px; }")
+        .arg(background.red()).arg(background.green()).arg(background.blue())
+        .arg(border.red()).arg(border.green()).arg(border.blue())
+        .arg(MenuRadius).arg(qRound(MenuBackgroundOpacity * 255)));
 
     QWindow *window = menu->windowHandle();
     if (!window) {
@@ -199,6 +80,7 @@ void updateEffects(QMenu *menu)
     }
     handle->setTranslucentBackground(true);
     handle->setWindowRadius(MenuRadius);
+    // Keep the Wayland surface tight to the menu; avoid blur outside its bounds.
     handle->setShadowRadius(0);
     handle->setBorderWidth(0);
 
@@ -211,8 +93,7 @@ void updateEffects(QMenu *menu)
 
 void updateBlurRegion(QMenu *menu)
 {
-    if (menu && menu->property(StyleInstalledProperty).toBool()
-        && menu->windowHandle()) {
+    if (menu && menu->windowHandle()) {
         KWindowEffects::enableBlurBehind(menu->windowHandle(), true,
                                          roundedRegion(menu));
     }
@@ -249,10 +130,7 @@ void configure(QMenu *menu, QScreen *screen, const QPoint &layerPosition)
     }
     window->resize(menu->size());
 
-    const QMargins shadowMargins = menu->contentsMargins();
-    const QPoint surfacePosition = layerPosition
-        - QPoint(shadowMargins.left(), shadowMargins.top());
-    const QPoint position = boundedPosition(menu, screen, surfacePosition);
+    const QPoint position = boundedPosition(menu, screen, layerPosition);
     menu->setProperty(LayerXProperty, position.x());
     menu->setProperty(LayerYProperty, position.y());
 
@@ -283,8 +161,6 @@ void configureSubmenus(QMenu *menu, QScreen *screen)
             continue;
         }
 
-        installStyle(submenu);
-
         if (!submenu->property(SubmenuHookProperty).toBool()) {
             submenu->setProperty(SubmenuHookProperty, true);
             QPointer<QMenu> parentMenu(menu);
@@ -301,11 +177,8 @@ void configureSubmenus(QMenu *menu, QScreen *screen)
                 const QPoint parentPosition(
                     parentMenu->property(LayerXProperty).toInt(),
                     parentMenu->property(LayerYProperty).toInt());
-                const QMargins parentMargins = parentMenu->contentsMargins();
                 configure(childMenu, targetScreen,
-                          parentPosition
-                            + QPoint(parentMenu->width() - parentMargins.right(),
-                            actionRect.top()));
+                          parentPosition + QPoint(parentMenu->width(), actionRect.top()));
                 configureSubmenus(childMenu, targetScreen);
             });
         }
