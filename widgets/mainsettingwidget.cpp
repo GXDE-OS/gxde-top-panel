@@ -39,10 +39,47 @@ DWIDGET_USE_NAMESPACE
 
 namespace {
 
-// 设置项文字沿用旧设置窗的翻译上下文，已有的中文翻译可以直接复用
+// 设置项文字沿用旧设置窗的翻译上下文，已有的中文翻译可以直接复用。
+// 类外的文字统一写成 QCoreApplication::translate("MainSettingWidget", ...)，
+// lupdate 才能按字面量提取到正确的上下文
 constexpr char TranslateContext[] = "MainSettingWidget";
 
-QString tr(const char *text)
+// settings.json 里的分组名、选项名：lupdate 不解析 JSON，在此登记以便提取翻译
+[[maybe_unused]] const char *const SettingsJsonStrings[] = {
+    QT_TRANSLATE_NOOP("MainSettingWidget", "Preference"),
+    QT_TRANSLATE_NOOP("MainSettingWidget", "General"),
+    QT_TRANSLATE_NOOP("MainSettingWidget", "Panel Color"),
+    QT_TRANSLATE_NOOP("MainSettingWidget", "Font Color"),
+    QT_TRANSLATE_NOOP("MainSettingWidget", "Panel Alpha (0~255)"),
+    QT_TRANSLATE_NOOP("MainSettingWidget", "Follow System Theme"),
+    QT_TRANSLATE_NOOP("MainSettingWidget", "Enable new UI"),
+    QT_TRANSLATE_NOOP("MainSettingWidget", "Use dark DTK panel"),
+    QT_TRANSLATE_NOOP("MainSettingWidget", "Use DDE V23 icon style"),
+    QT_TRANSLATE_NOOP("MainSettingWidget", "Use DDE V25 icon style"),
+    QT_TRANSLATE_NOOP("MainSettingWidget", "Ignore Dock"),
+    QT_TRANSLATE_NOOP("MainSettingWidget", "Show Menu on Hover Only"),
+    QT_TRANSLATE_NOOP("MainSettingWidget", "Drag to Move"),
+    QT_TRANSLATE_NOOP("MainSettingWidget", "Hide titlebar when maximized [reboot or login out]"),
+    QT_TRANSLATE_NOOP("MainSettingWidget", "Control Buttons"),
+    QT_TRANSLATE_NOOP("MainSettingWidget", "Show Control Buttons"),
+    QT_TRANSLATE_NOOP("MainSettingWidget", "Close Button"),
+    QT_TRANSLATE_NOOP("MainSettingWidget", "Unmax Button"),
+    QT_TRANSLATE_NOOP("MainSettingWidget", "Minimize Button"),
+    QT_TRANSLATE_NOOP("MainSettingWidget", "Buttons on Right"),
+    QT_TRANSLATE_NOOP("MainSettingWidget", "Buttons with highlight"),
+    QT_TRANSLATE_NOOP("MainSettingWidget", "Buttons highlight color"),
+    QT_TRANSLATE_NOOP("MainSettingWidget", "App Icons"),
+    QT_TRANSLATE_NOOP("MainSettingWidget", "Default Icon"),
+    QT_TRANSLATE_NOOP("MainSettingWidget", "Always use default icon"),
+    QT_TRANSLATE_NOOP("MainSettingWidget", "App name instead of icon"),
+    QT_TRANSLATE_NOOP("MainSettingWidget", "Show logo with app name"),
+    QT_TRANSLATE_NOOP("MainSettingWidget", "Clock"),
+    QT_TRANSLATE_NOOP("MainSettingWidget", "Customize clock format"),
+    QT_TRANSLATE_NOOP("MainSettingWidget", "Use 12-hour clock"),
+};
+
+
+QString translated(const char *text)
 {
     return QCoreApplication::translate(TranslateContext, text);
 }
@@ -249,8 +286,8 @@ QPair<QWidget *, QWidget *> createIconPicker(QObject *obj)
     layout->setContentsMargins(0, 0, 0, 0);
     auto *preview = new QLabel(box);
     preview->setFixedSize(16, 16);
-    auto *choose = makeIconButton(box, QStringLiteral("config"), tr("Config"));
-    auto *reset = makeIconButton(box, QStringLiteral("reset"), tr("Reset"));
+    auto *choose = makeIconButton(box, QStringLiteral("config"), QCoreApplication::translate("MainSettingWidget", "Config"));
+    auto *reset = makeIconButton(box, QStringLiteral("reset"), QCoreApplication::translate("MainSettingWidget", "Reset"));
     layout->addStretch();
     layout->addWidget(preview);
     layout->addWidget(choose);
@@ -263,15 +300,15 @@ QPair<QWidget *, QWidget *> createIconPicker(QObject *obj)
     QObject::connect(option, &DSettingsOption::valueChanged, preview, refresh);
 
     static const QMap<QString, const char *> titles {
-        { "options.buttons.closeIcon", "Select your close button icon" },
-        { "options.buttons.unmaxIcon", "Select your unmaximized button icon" },
-        { "options.buttons.minIcon", "Select your minimized button icon" },
-        { "options.appIcons.defaultIcon", "Select your default icon" },
+        { "options.buttons.closeIcon", QT_TRANSLATE_NOOP("MainSettingWidget", "Select your close button icon") },
+        { "options.buttons.unmaxIcon", QT_TRANSLATE_NOOP("MainSettingWidget", "Select your unmaximized button icon") },
+        { "options.buttons.minIcon", QT_TRANSLATE_NOOP("MainSettingWidget", "Select your minimized button icon") },
+        { "options.appIcons.defaultIcon", QT_TRANSLATE_NOOP("MainSettingWidget", "Select your default icon") },
     };
-    const QString title = tr(titles.value(option->key(), "Select your default icon"));
+    const QString title = translated(titles.value(option->key(), "Select your default icon"));
     QObject::connect(choose, &DIconButton::clicked, box, [option, box, title] {
         const QString file = QFileDialog::getOpenFileName(box, title, QStringLiteral("~"),
-                                                          tr("Images (*.png *.jpg *.svg)"));
+                                                          QCoreApplication::translate("MainSettingWidget", "Images (*.png *.jpg *.svg)"));
         if (!file.isEmpty())
             option->setValue(file);
     });
@@ -287,7 +324,7 @@ QPair<QWidget *, QWidget *> createColorPicker(QObject *obj)
     auto *option = qobject_cast<DSettingsOption *>(obj);
     auto *button = new QToolButton;
     button->setFixedSize(24, 24);
-    button->setToolTip(tr("Config"));
+    button->setToolTip(QCoreApplication::translate("MainSettingWidget", "Config"));
     // 面板背景色由深浅模式决定，这里只显示当前颜色，不可修改
     if (option->key() == QLatin1String("options.general.panelColor"))
         button->setEnabled(false);
@@ -313,7 +350,7 @@ QPair<QWidget *, QWidget *> createLinkedCheckBox(QObject *obj)
     const QString key = option->key();
 
     if (key == QLatin1String("options.general.ignoreDock")) {
-        checkBox->setToolTip(tr("Ignore the dde-dock window. \n"
+        checkBox->setToolTip(QCoreApplication::translate("MainSettingWidget", "Ignore the dde-dock window. \n"
                                 "It is used to solve the desktop icon occlusion problem.\n"
                                 "Only works when dde-dock is not running.\n\n"
                                 "If anything strange happens, please uncheck this, and restart the dde-dock."));
@@ -357,14 +394,14 @@ QWidget *createClockFormat(QObject *obj)
 
     auto *edit = new QLineEdit(page);
     edit->setMaxLength(256);
-    auto *help = new QLabel(tr("Use Y or YYYY for the full year; use YY for the two-digit year\n"
+    auto *help = new QLabel(QCoreApplication::translate("MainSettingWidget", "Use Y or YYYY for the full year; use YY for the two-digit year\n"
                                "M represents the month; D represents the day; ddd represents the weekday\n"
                                "h represents the hour; m represents the minute; s represents the second\n"
                                "The clock format can contain custom text. Use \\n for a line break (up to two lines)\n"
                                "Escape the keywords above with a backslash \\, for example, \\Y displays Y instead of the year; likewise, \\\\ displays a single backslash"),
                             page);
     help->setWordWrap(true);
-    auto *previewTitle = new QLabel(tr("Below is a preview of your format:"), page);
+    auto *previewTitle = new QLabel(QCoreApplication::translate("MainSettingWidget", "Below is a preview of your format:"), page);
     auto *preview = new QLabel(page);
     preview->setTextFormat(Qt::PlainText);
     preview->setAlignment(Qt::AlignCenter);
