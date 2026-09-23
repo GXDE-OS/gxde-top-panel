@@ -68,6 +68,8 @@ MainSettingWidget::MainSettingWidget(QWidget *parent) :
         ui->newUiCheckBox->setChecked(settings->isNewUiEnabled());
         const QSignalBlocker blocker(ui->useDarkDtkPanelCheckBox);
         ui->useDarkDtkPanelCheckBox->setChecked(settings->isUseDarkDtkPanel());
+        const QSignalBlocker themeBlocker(ui->followSystemThemeCheckBox);
+        ui->followSystemThemeCheckBox->setChecked(settings->isFollowSystemTheme());
         const QSignalBlocker iconBlocker(ui->alwaysUseDefaultIconCheckBox);
         ui->alwaysUseDefaultIconCheckBox->setChecked(settings->isAlwaysUseDefaultIcon());
         ui->panelColorlabel->setStyleSheet(QString("QLabel {background-color: %1;}").arg(settings->getPanelBgColor().name()));

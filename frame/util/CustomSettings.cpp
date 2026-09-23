@@ -343,6 +343,11 @@ void CustomSettings::readSettings() {
     this->buttonHighLightColor = settings.value("windowControl/buttonHighlightColor", this->buttonHighLightColor).value<QColor>();
     this->followSystemTheme = settings.value("panel/followSystemTheme", this->isFollowSystemTheme()).toBool();
     useDarkDtkPanel = settings.value("panel/useDarkDtkPanel", false).toBool();
+    if (useDarkDtkPanel && followSystemTheme) {
+        followSystemTheme = false;
+        settings.setValue("panel/followSystemTheme", false);
+        settings.sync();
+    }
     newUiEnabled = settings.value("panel/newUiEnabled", true).toBool();
     this->allowDragWindowWhenMax = settings.value("windowControl/allowDragWindowWhenMax", this->allowDragWindowWhenMax).toBool();
 
@@ -455,7 +460,12 @@ bool CustomSettings::isFollowSystemTheme() const {
 }
 
 void CustomSettings::setFollowSystemTheme(bool followSystemTheme) {
+    if (CustomSettings::followSystemTheme == followSystemTheme
+        && !(followSystemTheme && useDarkDtkPanel))
+        return;
     CustomSettings::followSystemTheme = followSystemTheme;
+    if (followSystemTheme)
+        useDarkDtkPanel = false;
     applyPanelTheme();
     emit settingsChanged();
 }
@@ -485,9 +495,11 @@ bool CustomSettings::isUseDarkDtkPanel() const {
 }
 
 void CustomSettings::setUseDarkDtkPanel(bool enabled) {
-    if (useDarkDtkPanel == enabled)
+    if (useDarkDtkPanel == enabled && !(enabled && followSystemTheme))
         return;
     useDarkDtkPanel = enabled;
+    if (enabled)
+        followSystemTheme = false;
     applyPanelTheme();
     emit settingsChanged();
 }
