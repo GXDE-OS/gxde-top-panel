@@ -9,11 +9,13 @@
 #include <QMargins>
 #include <QEvent>
 #include <QWindow>
+#include <QMenu>
 #include <unistd.h>
 #include <iostream>
 #include <LayerShellQt/Shell>
 #include <LayerShellQt/Window>
 #include "window/MainWindow.h"
+#include "util/WaylandMenu.h"
 
 DWIDGET_USE_NAMESPACE
 #ifdef DCORE_NAMESPACE
@@ -66,9 +68,18 @@ int main(int argc, char *argv[]) {
         protected:
             bool eventFilter(QObject *object, QEvent *event) override {
                 QWidget *target = qobject_cast<QWidget *>(object);
-                if (target && target->windowType() == Qt::Popup
-                        && event->type() == QEvent::Show) {
+                if (!target || target->windowType() != Qt::Popup) {
+                    return QObject::eventFilter(object, event);
+                }
+
+                QMenu *menu = qobject_cast<QMenu *>(target);
+                if (menu && event->type() == QEvent::Polish) {
+                    menu->setAttribute(Qt::WA_TranslucentBackground);
+                } else if (event->type() == QEvent::Show) {
                     fixPopupLayerShell(target);
+                    if (menu) {
+                        WaylandMenu::updateEffects(menu);
+                    }
                 }
                 return QObject::eventFilter(object, event);
             }
@@ -93,7 +104,7 @@ int main(int argc, char *argv[]) {
                 layer->setAnchors(anchors);
                 layer->setMargins(QMargins(pos.x(), pos.y(), 0, 0));
                 layer->setLayer(LayerShellQt::Window::LayerOverlay);
-                layer->setExclusiveZone(0);
+                layer->setExclusiveZone(-1);
 
                 const bool acceptsKeyboard = window->transientParent() == nullptr;
                 layer->setKeyboardInteractivity(acceptsKeyboard

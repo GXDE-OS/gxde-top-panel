@@ -5,6 +5,7 @@
 #include "MainPanelControl.h"
 #include <QApplication>
 #include <QDrag>
+#include <QResizeEvent>
 
 MainPanelControl::MainPanelControl(QWidget *parent)
     : QWidget(parent)
@@ -519,7 +520,15 @@ void MainPanelControl::dragLeaveEvent(QDragLeaveEvent *event) {
 }
 
 void MainPanelControl::applyCustomSettings(const CustomSettings &customSettings) {
+    this->setFixedHeight(customSettings.getPanelHeight());
     this->activeWindowControlWidget->applyCustomSettings(customSettings);
     this->m_buttonWidget->applyCustomSettings(customSettings);
     this->m_buttonWidget->setVisible(customSettings.isShowControlButtons() && !customSettings.isButtonOnLeft());
+}
+
+void MainPanelControl::resizeEvent(QResizeEvent *event) {
+    QWidget::resizeEvent(event);
+    if (event->oldSize().height() != event->size().height()) {
+        resizeDockIcon();
+    }
 }

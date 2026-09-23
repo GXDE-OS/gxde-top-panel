@@ -6,6 +6,8 @@
 #include <KWindowEffects>
 #include <LayerShellQt/Window>
 #include <QAction>
+#include <QCoreApplication>
+#include <QApplication>
 #include <QMenu>
 #include <QPainterPath>
 #include <QPalette>
@@ -13,12 +15,18 @@
 #include <QRegion>
 #include <QScreen>
 #include <QWindow>
+#include <QPainter>
+#include <QEvent>
+#include <DGuiApplicationHelper>
+
+DGUI_USE_NAMESPACE
 
 namespace {
 
 constexpr int MenuRadius = 8;
-constexpr qreal MenuBackgroundOpacity = 0.72;
 constexpr auto PlatformHandleName = "wayland-menu-platform-handle";
+constexpr auto BorderOverlayName = "wayland-menu-border-overlay";
+constexpr auto ShadowProperty = "gxde-wayland-menu-shadow";
 constexpr auto LayerXProperty = "gxde-wayland-menu-layer-x";
 constexpr auto LayerYProperty = "gxde-wayland-menu-layer-y";
 constexpr auto SubmenuHookProperty = "gxde-wayland-submenu-hook";
@@ -33,6 +41,154 @@ QRegion roundedRegion(const QMenu *menu)
     path.addRoundedRect(QRectF(menu->rect()), MenuRadius, MenuRadius);
     return QRegion(path.toFillPolygon().toPolygon());
 }
+
+class MenuBorderOverlay : public QWidget {
+public:
+    explicit MenuBorderOverlay(QMenu *menu)
+            : QWidget(menu) {
+        setObjectName(QString::fromLatin1(BorderOverlayName));
+        setAttribute(Qt::WA_TransparentForMouseEvents);
+        setAttribute(Qt::WA_NoSystemBackground);
+        menu->installEventFilter(this);
+        syncGeometry();
+    }
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override {
+        if (watched == parent() && (event->type() == QEvent::Resize
+                || event->type() == QEvent::Show)) {
+            syncGeometry();
+        }
+        
+        if (watched == parent() && event->type() == QEvent::Paint
+                && DGuiApplicationHelper::instance()->themeType() == DGuiApplicationHelper::DarkType) {
+            auto *menu = static_cast<QWidget *>(watched);
+            QPainter painter(menu);
+            painter.setRenderHint(QPainter::Antialiasing);
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(QColor(24, 24, 24, 90));
+            painter.drawRoundedRect(QRectF(menu->rect()), MenuRadius, MenuRadius);
+        }
+        return QWidget::eventFilter(watched, event);
+    }
+
+    void paintEvent(QPaintEvent *) override {
+        const bool dark = DGuiApplicationHelper::instance()->themeType()
+            == DGuiApplicationHelper::DarkType;
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
+        painter.setPen(QPen(dark ? QColor(255, 255, 255, 26) : QColor(0, 0, 0, 31), 1));
+        painter.setBrush(Qt::NoBrush);
+        painter.drawRoundedRect(QRectF(rect()).adjusted(0.5, 0.5, -0.5, -0.5),
+            MenuRadius - 0.5, MenuRadius - 0.5);
+    }
+
+private:
+    void syncGeometry() {
+        setGeometry(parentWidget()->rect());
+        raise();
+        update();
+    }
+};
+
+class MenuShadow : public QWidget {
+public:
+    static constexpr int Radius = 18;
+    static constexpr int OffsetY = 1;
+
+    explicit MenuShadow(QMenu *menu)
+            : QWidget(nullptr, Qt::FramelessWindowHint | Qt::WindowTransparentForInput
+                | Qt::WindowDoesNotAcceptFocus | Qt::Tool)
+            , m_menu(menu) {
+        setAttribute(Qt::WA_TranslucentBackground);
+        setAttribute(Qt::WA_ShowWithoutActivating);
+        menu->installEventFilter(this);
+        QObject::connect(menu, &QObject::destroyed, this, &QObject::deleteLater);
+    }
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override {
+        if (watched != m_menu) {
+            return false;
+        }
+
+        switch (event->type()) {
+        case QEvent::Show:
+        case QEvent::Move:
+        case QEvent::Resize:
+            if (m_menu->isVisible()) {
+                follow();
+            }
+            break;
+        case QEvent::Hide:
+            hide();
+            break;
+        default:
+            break;
+        }
+        return false;
+    }
+
+    void paintEvent(QPaintEvent *) override {
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
+        painter.setPen(Qt::NoPen);
+        const QRectF menuArea = QRectF(rect()).adjusted(Radius, Radius - OffsetY,
+            -Radius, -Radius - OffsetY);
+        QPainterPath clip;
+        clip.addRect(QRectF(rect()));
+        QPainterPath menuPath;
+        menuPath.addRoundedRect(menuArea, MenuRadius, MenuRadius);
+        painter.setClipPath(clip.subtracted(menuPath));
+
+        const QRectF core = QRectF(rect()).adjusted(Radius, Radius, -Radius, -Radius);
+        for (int i = Radius; i > 0; --i) {
+            const qreal t = qreal(Radius - i + 1) / Radius;          // 0..1 由外到内
+            painter.setBrush(QColor(0, 0, 0, qRound(6 * t * t)));
+            painter.drawRoundedRect(core.adjusted(-i, -i, i, i),
+                MenuRadius + i, MenuRadius + i);
+        }
+    }
+
+private:
+    void follow() {
+        QScreen *screen = m_menu->screen();
+        const QRect menuRect(m_menu->pos(), m_menu->size());
+        const QRect shadowRect = menuRect.adjusted(-Radius, -Radius + OffsetY,
+            Radius, Radius + OffsetY);
+        resize(shadowRect.size());
+
+        if (!m_layerReady) {
+            winId();
+            if (QWindow *window = windowHandle()) {
+                if (screen)
+                    window->setScreen(screen);
+                LayerShellQt::Window *layer = LayerShellQt::Window::get(window);
+                layer->setScope(QStringLiteral("menu-shadow"));
+                layer->setLayer(LayerShellQt::Window::LayerTop);
+                layer->setScreenConfiguration(LayerShellQt::Window::ScreenFromQWindow);
+                layer->setAnchors(LayerShellQt::Window::Anchors(
+                    LayerShellQt::Window::AnchorTop | LayerShellQt::Window::AnchorLeft));
+                layer->setExclusiveZone(-1);
+                layer->setKeyboardInteractivity(
+                    LayerShellQt::Window::KeyboardInteractivityNone);
+                m_layerReady = true;
+            }
+        }
+
+        const QPoint origin = screen ? screen->geometry().topLeft() : QPoint();
+        const QPoint pos = shadowRect.topLeft() - origin;
+        if (QWindow *window = windowHandle()) {
+            LayerShellQt::Window::get(window)->setMargins(
+                QMargins(qMax(0, pos.x()), qMax(0, pos.y()), 0, 0));
+        }
+        show();
+        update();
+    }
+
+    QMenu *m_menu;
+    bool m_layerReady = false;
+};
 
 QPoint boundedPosition(QMenu *menu, QScreen *screen, const QPoint &position)
 {
@@ -57,15 +213,27 @@ void updateEffects(QMenu *menu)
 
     menu->setAttribute(Qt::WA_TranslucentBackground);
 
-    const QColor background = menu->palette().color(QPalette::Window);
-    const QColor border = menu->palette().color(QPalette::Mid);
-    menu->setStyleSheet(QStringLiteral(
-        "QMenu { background-color: rgba(%1, %2, %3, %8); "
-        "border: 1px solid rgba(%4, %5, %6, 110); "
-        "border-radius: %7px; padding: 4px; }")
-        .arg(background.red()).arg(background.green()).arg(background.blue())
-        .arg(border.red()).arg(border.green()).arg(border.blue())
-        .arg(MenuRadius).arg(qRound(MenuBackgroundOpacity * 255)));
+    QPalette palette = QApplication::palette(menu);
+    if (DGuiApplicationHelper::instance()->themeType() == DGuiApplicationHelper::DarkType) {
+        QColor window = palette.color(QPalette::Window);
+        window.setAlpha(80);
+        palette.setColor(QPalette::Window, window);
+    }
+    menu->setPalette(palette);
+
+    if (!menu->findChild<QWidget *>(QString::fromLatin1(BorderOverlayName),
+            Qt::FindDirectChildrenOnly)) {
+        new MenuBorderOverlay(menu);
+    }
+
+    if (!menu->property(ShadowProperty).toBool()) {
+        menu->setProperty(ShadowProperty, true);
+        auto *shadow = new MenuShadow(menu);
+        if (menu->isVisible()) {
+            QCoreApplication::postEvent(menu, new QEvent(QEvent::Move));
+        }
+        Q_UNUSED(shadow);
+    }
 
     QWindow *window = menu->windowHandle();
     if (!window) {

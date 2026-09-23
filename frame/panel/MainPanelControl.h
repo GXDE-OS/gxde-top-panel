@@ -52,6 +52,7 @@ private:
 protected:
     void mouseDoubleClickEvent(QMouseEvent *event) override;
     void dragMoveEvent(QDragMoveEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
 
     void dragLeaveEvent(QDragLeaveEvent *event) override;
