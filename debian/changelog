@@ -1,5 +1,6 @@
-gxde-top-panel (2.0.0) UNRELEASED; urgency=medium
+gxde-top-panel (2.0.1) UNRELEASED; urgency=medium
 
+  [ CharOfString ]
   * 新增「始终使用默认app图标」选项
   * 修复了app图标在Wayland下被裁切的问题
   * 增加了一套全新的局布
@@ -15,7 +16,10 @@ gxde-top-panel (2.0.0) UNRELEASED; urgency=medium
   * 修改菜单样式为DTK6样式
   * 修复「开启『忽略 dde-dock』后，每次重启顶栏都会把底栏位置改成顶部并持久化 」的问题 (https://gitee.com/GXDE-OS/gxde-top-panel/issues/IKHSRX)
 
- -- CharOfString <root@charofstring.cc>  Wed, 23 Sep 2026 14:24:02 -0500
+  [ gfdgd_xi ]
+  * 修复电源选项插件和回收站插件图标显示错误的问题
+
+ -- gfdgd_xi <3025613752@qq.com>  Sat, 03 Oct 2026 22:46:54 +0800
 
 gxde-top-panel (1.0.8) UNRELEASED; urgency=medium
 
