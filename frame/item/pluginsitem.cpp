@@ -55,9 +55,9 @@ PluginsItem::PluginsItem(PluginsItemInterface *const pluginInter, const QString 
     m_centralWidget->setVisible(true);
     m_centralWidget->setObjectName(pluginInter->pluginName() + "-centralwidget");
     m_centralWidget->installEventFilter(this);
-    // 托盘里是各应用自己的图标，不能按面板前景色统一染色（浅色模式下会被反色）；
+    // 托盘里是各应用自己的图标，不能按面板前景色统一染色，电源选项插件和回收站插件图标也不能统一染色，会显示错误（浅色模式下会被反色）；
     // 托盘里的 symbolic 图标由托盘插件自己处理
-    if (pluginInter->pluginName() != QLatin1String("tray"))
+    if (pluginInter->pluginName() != QLatin1String("tray") && pluginName() != QLatin1String("shutdown") && pluginName() != QLatin1String("trash"))
         m_centralWidget->setGraphicsEffect(new PanelForegroundEffect(m_centralWidget));
 
     QBoxLayout *hLayout = new QHBoxLayout;
