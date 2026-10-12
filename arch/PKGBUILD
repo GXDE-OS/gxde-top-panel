@@ -1,0 +1,48 @@
+# Maintainer: CharOfString <root@charofstring.cc>
+pkgname=gxde-top-panel-git
+pkgver=2.0.1
+pkgrel=1
+pkgdesc='GXDE top panel'
+arch=('x86_64' 'aarch64')
+url="https://github.com/GXDE-OS/gxde-top-panel"
+license=('GPL-3.0-or-later')
+depends=('gxde-top-panel-plugins-git' 'gxde-globalmenu-service-git' 'dtk6widget-git' 'dtk6gui-git'
+         'dtk6core-git' 'dframework-dbus-qt6-git' 'gsettings-qt6' 'kwindowsystem' 'layer-shell-qt'
+         'qt6-base' 'qt6-svg' 'wayland' 'libx11' 'libxcb' 'xcb-util-wm' 'xdotool' 'libxkbcommon' 'dconf'
+         'libgcc' 'libstdc++' 'glibc')
+makedepends=('git' 'cmake' 'ninja' 'qt6-tools')
+# Debian 把开发文件拆到 -dev 包，这里没有文件冲突，按 Arch 惯例合并
+# Debian splits the development files into a -dev package; nothing collides
+# here, so they stay in the main package as usual on Arch.
+provides=('gxde-top-panel')
+conflicts=('gxde-top-panel')
+source=()
+sha512sums=()
+
+# 直接使用 PKGBUILD 所在的 git 仓库作为源码 ・ Build from the git checkout this PKGBUILD lives in.
+_srcroot() {
+  git -C "$startdir" rev-parse --show-toplevel
+}
+
+build() {
+  # CMakeLists.txt 用 `apt --version` 选择安装规则：有 apt 时使用维护中的 deb.cmake，
+  # 没有 apt 的分支仍引用旧的 dde-top-panel 文件名而无法安装。配置时提供一个只回显版本的 apt，
+  # 走与 Debian 相同的分支
+  # CMakeLists.txt picks its install rules with `apt --version`: with apt it
+  # uses the maintained deb.cmake, while the branch without apt still refers
+  # to the old dde-top-panel file names and fails to install.  Provide an apt
+  # that only prints a version while configuring, to take the same branch as
+  # Debian.
+  mkdir -p shim
+  printf '#!/bin/sh\necho "apt (configure shim)"\n' > shim/apt
+  chmod +x shim/apt
+  PATH="$srcdir/shim:$PATH" cmake -B build -S "$(_srcroot)" -GNinja \
+    -DCMAKE_BUILD_TYPE=None \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_LIBDIR=lib
+  ninja -C build
+}
+
+package() {
+  DESTDIR="$pkgdir" ninja -C build install
+}
