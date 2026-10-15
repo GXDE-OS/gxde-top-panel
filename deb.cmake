@@ -66,7 +66,7 @@ add_custom_command(
 
 add_custom_target(changelog ALL DEPENDS "${CMAKE_BINARY_DIR}/changelog.gz")
 
-install(FILES ${CMAKE_BINARY_DIR}/frame/gxde-top-panel DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS gxde-top-panel RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(FILES ${CMAKE_SOURCE_DIR}/xml/com.deepin.dde.toppanel.gschema.xml DESTINATION ${CMAKE_INSTALL_DATADIR}/glib-2.0/schemas)
 install(FILES ${CMAKE_SOURCE_DIR}/gxde-top-panel.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
 #install(FILES ${CMAKE_SOURCE_DIR}/gxde-top-panel.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/../../etc/xdg/autostart)
