@@ -44,6 +44,7 @@
 #include "../frame/util/XUtils.h"
 
 #include "dbusmenuimporter.h"
+#include <bernese/x11_info.h>
 
 static const QByteArray s_x11AppMenuServiceNamePropertyName =
     QByteArrayLiteral("_KDE_NET_WM_APPMENU_SERVICE_NAME");
@@ -302,11 +303,10 @@ void AppMenuModel::onActiveWindowChanged(WId id)
 #if HAVE_X11
 
     if (KWindowSystem::isPlatformX11()) {
-        auto x11App = qApp->nativeInterface<QNativeInterface::QX11Application>();
-        if (!x11App) {
+        auto *c = bernese::X11Info::GetConnection();
+        if (!c) {
             return;
         }
-        auto *c = x11App->connection();
 
         auto getWindowPropertyString = [c, this](WId id, const QByteArray & name) -> QByteArray {
             QByteArray value;

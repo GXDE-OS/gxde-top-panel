@@ -48,6 +48,7 @@ target_include_directories(${PROJECT} PUBLIC
         )
 
 target_link_libraries(${PROJECT}
+        GxdeBernese::Qt6
         Qt6::Widgets
         Qt6::DBus
         KF6::WindowSystem

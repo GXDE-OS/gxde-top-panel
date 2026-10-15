@@ -26,14 +26,15 @@
 #include <xcb/xcb_ewmh.h>
 
 #include "xcb_misc.h"
+#include <bernese/x11_info.h>
 
 static XcbMisc * _xcb_misc_instance = NULL;
 
 XcbMisc::XcbMisc()
 {
-    auto x11App = qApp->nativeInterface<QNativeInterface::QX11Application>();
-    if (x11App) {
-        xcb_intern_atom_cookie_t * cookie = xcb_ewmh_init_atoms(x11App->connection(), &m_ewmh_connection);
+    auto *connection = bernese::X11Info::GetConnection();
+    if (connection) {
+        xcb_intern_atom_cookie_t * cookie = xcb_ewmh_init_atoms(connection, &m_ewmh_connection);
         m_valid = xcb_ewmh_init_atoms_replies(&m_ewmh_connection, cookie, NULL);
     }
 }
@@ -70,7 +71,10 @@ void XcbMisc::set_window_type(xcb_window_t winId, WindowType winType)
         break;
     }
 
+    // Publish Qt-created windows before using the separate XCB connection.
+    QGuiApplication::sync();
     xcb_ewmh_set_wm_window_type(&m_ewmh_connection, winId, 1, atoms);
+    xcb_flush(m_ewmh_connection.connection);
 }
 
 void XcbMisc::clear_strut_partial(xcb_window_t winId)
@@ -82,6 +86,7 @@ void XcbMisc::clear_strut_partial(xcb_window_t winId)
     memset(&strutPartial, 0, sizeof(xcb_ewmh_wm_strut_partial_t));
 
     xcb_ewmh_set_wm_strut_partial(&m_ewmh_connection, winId, strutPartial);
+    xcb_flush(m_ewmh_connection.connection);
 }
 
 void XcbMisc::set_strut_partial(xcb_window_t winId, Orientation orientation, uint strut, uint start, uint end)
@@ -118,6 +123,7 @@ void XcbMisc::set_strut_partial(xcb_window_t winId, Orientation orientation, uin
     }
 
     xcb_ewmh_set_wm_strut_partial(&m_ewmh_connection, winId, strut_partial);
+    xcb_flush(m_ewmh_connection.connection);
 }
 
 void XcbMisc::set_window_icon_geometry(xcb_window_t winId, QRect geo)
@@ -128,4 +134,5 @@ void XcbMisc::set_window_icon_geometry(xcb_window_t winId, QRect geo)
     const auto ratio = qApp->devicePixelRatio();
 
     xcb_ewmh_set_wm_icon_geometry(&m_ewmh_connection, winId, geo.x() * ratio, geo.y() * ratio, geo.width() * ratio, geo.height() * ratio);
+    xcb_flush(m_ewmh_connection.connection);
 }

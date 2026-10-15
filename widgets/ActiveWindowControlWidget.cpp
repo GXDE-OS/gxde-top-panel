@@ -25,6 +25,7 @@
 #include <KWindowInfo>
 #include <QStandardPaths>
 #include <iostream>
+#include <bernese/x11_info.h>
 
 namespace {
 constexpr int IndicatorTwoLineFontSize = 10;
@@ -553,15 +554,16 @@ void ActiveWindowControlWidget::mouseMoveEvent(QMouseEvent *event) {
                 QWidget::mouseMoveEvent(event);
                 return;
             }
-            auto x11App = qApp->nativeInterface<QNativeInterface::QX11Application>();
-            if (x11App) {
-                NETRootInfo ri(x11App->connection(), NET::WMMoveResize);
+            auto *connection = bernese::X11Info::GetConnection();
+            if (connection) {
+                NETRootInfo ri(connection, NET::WMMoveResize);
                 ri.moveResizeRequest(
                         this->currActiveWinId,
                         event->globalPosition().x() * this->devicePixelRatioF(),
                         (this->height() + event->globalPosition().y()) * this->devicePixelRatioF(),
                         NET::Move
                 );
+                xcb_flush(connection);
             }
             this->mouseClicked = false;
         }

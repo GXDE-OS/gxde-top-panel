@@ -55,6 +55,8 @@ endif ()
 
 file(GLOB INTERFACES "interfaces/*.h")
 
+find_package(GxdeBerneseQt6 REQUIRED)
+
 add_subdirectory("frame")
 #add_subdirectory("plugins")
 add_subdirectory("appmenu")
@@ -78,6 +80,13 @@ if (BUILD_TESTING)
     target_include_directories(panelbackground_test PRIVATE ${CMAKE_SOURCE_DIR})
     target_link_libraries(panelbackground_test PRIVATE Qt6::Gui)
     add_test(NAME panelbackground COMMAND panelbackground_test)
+    if (CMAKE_READELF)
+        add_test(NAME qt_public_api
+            COMMAND ${CMAKE_COMMAND}
+                -DPANEL_BINARY=$<TARGET_FILE:gxde-top-panel>
+                -DREADELF=${CMAKE_READELF}
+                -P ${CMAKE_SOURCE_DIR}/tests/check_qt_public_api.cmake)
+    endif()
 endif()
 
 # Install interface headers for development library

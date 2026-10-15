@@ -6,7 +6,7 @@ pkgdesc='GXDE top panel'
 arch=('x86_64' 'aarch64')
 url="https://github.com/GXDE-OS/gxde-top-panel"
 license=('GPL-3.0-or-later')
-depends=('gxde-top-panel-plugins-git' 'gxde-globalmenu-service-git' 'dtk6widget-git' 'dtk6gui-git'
+depends=('gxde-bernese-git' 'gxde-top-panel-plugins-git' 'gxde-globalmenu-service-git' 'dtk6widget-git' 'dtk6gui-git'
          'dtk6core-git' 'dframework-dbus-qt6-git' 'gsettings-qt6' 'kwindowsystem' 'layer-shell-qt'
          'qt6-base' 'qt6-svg' 'wayland' 'libx11' 'libxcb' 'xcb-util-wm' 'xdotool' 'libxkbcommon' 'dconf'
          'libgcc' 'libstdc++' 'glibc')
