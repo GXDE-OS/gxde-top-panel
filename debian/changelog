@@ -1,8 +1,12 @@
-gxde-top-panel (2.0.2) UNRELEASED; urgency=medium
+gxde-top-panel (2.0.3) UNRELEASED; urgency=medium
 
+  [ CharOfString ]
   * 提供Archlinux打包并且接入GXDE Bernese
 
- -- CharOfString <root@charofstring.cc>  Thu, 15 Oct 2026 08:23:02 -0500
+  [ gfdgd_xi ]
+  * fix: 修复顶栏插件右键无法弹出插件菜单的问题
+
+ -- gfdgd_xi <3025613752@qq.com>  Sun, 01 Nov 2026 11:19:15 +0800
 
 gxde-top-panel (2.0.1) UNRELEASED; urgency=medium
 
