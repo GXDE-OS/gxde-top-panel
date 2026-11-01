@@ -198,7 +198,11 @@ void PluginsItem::mousePressEvent(QMouseEvent *e)
 
     if (e->button() == Qt::RightButton) {
         if (perfectIconRect().contains(e->pos())) {
-            return (m_gsettings && (!m_gsettings->keys().contains("menuEnable") || m_gsettings->get("menuEnable").toBool())) ? showContextMenu() : void();
+            // 插件未安装对应的 gsettings schema 时 m_gsettings 为空，此时默认允许右键菜单；
+            // 仅当明确配置了 menuEnable 为 false 时才禁用
+            const bool menuDisabled = m_gsettings && m_gsettings->keys().contains("menuEnable")
+                    && !m_gsettings->get("menuEnable").toBool();
+            return menuDisabled ? void() : showContextMenu();
         }
     }
 
