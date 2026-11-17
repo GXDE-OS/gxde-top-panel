@@ -1,12 +1,13 @@
-gxde-top-panel (2.0.3) UNRELEASED; urgency=medium
+gxde-top-panel (2.0.4) UNRELEASED; urgency=medium
 
   [ CharOfString ]
   * 提供Archlinux打包并且接入GXDE Bernese
 
   [ gfdgd_xi ]
   * fix: 修复顶栏插件右键无法弹出插件菜单的问题
+  * fix: 修复Wayland下打开新窗口顶栏崩溃的问题
 
- -- gfdgd_xi <3025613752@qq.com>  Sun, 01 Nov 2026 11:19:15 +0800
+ -- gfdgd_xi <3025613752@qq.com>  Tue, 17 Nov 2026 14:15:05 +0800
 
 gxde-top-panel (2.0.1) UNRELEASED; urgency=medium
 
