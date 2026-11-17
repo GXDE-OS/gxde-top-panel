@@ -114,6 +114,8 @@ signals:
     void winIdChanged();
 
 private:
+    void releaseImporter();
+
     bool m_filterByActive = false;
     bool m_filterChildren = false;
     bool m_menuAvailable = false;

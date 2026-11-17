@@ -96,13 +96,7 @@ WaylandWindowManager::~WaylandWindowManager()
         m_socketNotifier->setEnabled(false);
     }
 
-    for (Window *window : std::as_const(m_windows)) {
-        if (window->handle) {
-            org_kde_plasma_window_destroy(window->handle);
-        }
-        delete window;
-    }
-    m_windows.clear();
+    clearWindows();
 
     if (m_management) {
         org_kde_plasma_window_management_destroy(m_management);
@@ -216,13 +210,19 @@ void WaylandWindowManager::registryGlobalRemove(void *data, wl_registry *, uint3
         return;
     }
     manager->m_management = nullptr;
-    manager->m_activeWindow = nullptr;
+    manager->clearWindows();
     emit manager->availabilityChanged(false);
     emit manager->activeWindowChanged();
 }
 
 void WaylandWindowManager::createWindow(uint32_t id, const char *uuid)
 {
+    // The management global may have gone away while events for it were
+    // still queued on the display.
+    if (!m_management) {
+        return;
+    }
+
     const QString windowUuid = fromWaylandString(uuid);
     for (const Window *window : std::as_const(m_windows)) {
         if (window->id == id || (!windowUuid.isEmpty() && window->uuid == windowUuid)) {
@@ -239,6 +239,10 @@ void WaylandWindowManager::createWindow(uint32_t id, const char *uuid)
             m_management, windowUuid.toUtf8().constData());
     } else {
         window->handle = org_kde_plasma_window_management_get_window(m_management, id);
+    }
+    if (!window->handle) {
+        delete window;
+        return;
     }
 
     static const org_kde_plasma_window_listener windowListener = {
@@ -260,12 +264,20 @@ void WaylandWindowManager::createWindow(uint32_t id, const char *uuid)
         &WaylandWindowManager::activityLeft,
         &WaylandWindowManager::resourceNameChanged,
     };
-    org_kde_plasma_window_add_listener(window->handle, &windowListener, window);
+    if (org_kde_plasma_window_add_listener(window->handle, &windowListener, window) < 0) {
+        org_kde_plasma_window_destroy(window->handle);
+        delete window;
+        return;
+    }
     m_windows.append(window);
 }
 
 void WaylandWindowManager::removeWindow(Window *window)
 {
+    if (!m_windows.contains(window)) {
+        return;
+    }
+
     const bool wasActive = m_activeWindow == window;
     if (wasActive) {
         m_activeWindow = nullptr;
@@ -279,6 +291,19 @@ void WaylandWindowManager::removeWindow(Window *window)
     if (wasActive) {
         emit activeWindowChanged();
     }
+}
+
+void WaylandWindowManager::clearWindows()
+{
+    for (Window *window : std::as_const(m_windows)) {
+        if (window->handle) {
+            org_kde_plasma_window_destroy(window->handle);
+            window->handle = nullptr;
+        }
+        delete window;
+    }
+    m_windows.clear();
+    m_activeWindow = nullptr;
 }
 
 void WaylandWindowManager::notifyIfActive(Window *window)

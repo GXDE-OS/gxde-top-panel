@@ -495,9 +495,9 @@ void AppMenuModel::updateApplicationMenu(const QString &serviceName, const QStri
 {
     if (m_serviceName == serviceName && m_menuObjectPath == menuObjectPath) {
         if (m_importer) {
-            QMetaObject::invokeMethod(m_importer, "updateMenu", Qt::QueuedConnection);
+            const QPointer<KDBusMenuImporter> importer = m_importer;
+            QMetaObject::invokeMethod(importer.data(), "updateMenu", Qt::QueuedConnection);
         }
-
         return;
     }
 
@@ -505,20 +505,27 @@ void AppMenuModel::updateApplicationMenu(const QString &serviceName, const QStri
     setMenuAvailable(false);
     emit modelNeedsUpdate();
 
+    releaseImporter();
+
     m_serviceName = serviceName;
     m_serviceWatcher->setWatchedServices(QStringList({m_serviceName}));
-
     m_menuObjectPath = menuObjectPath;
 
-    if (m_importer) {
-        m_importer->deleteLater();
-    }
+    const QPointer<KDBusMenuImporter> importer(new KDBusMenuImporter(serviceName, menuObjectPath, this));
+    m_importer = importer;
+    QMetaObject::invokeMethod(importer.data(), "updateMenu", Qt::QueuedConnection);
 
-    m_importer = new KDBusMenuImporter(serviceName, menuObjectPath, this);
-    QMetaObject::invokeMethod(m_importer, "updateMenu", Qt::QueuedConnection);
+    // Wayland announces several active-window changes while a new window is
+    // being mapped.  A queued DBus reply may arrive after this importer has
+    // been replaced by another window's menu, so captured importer must still
+    // be the current one before it is used.
+    connect(importer.data(), &DBusMenuImporter::menuUpdated, this,
+            [this, importer](QMenu *menu) {
+        if (!importer || m_importer != importer) {
+            return;
+        }
 
-    connect(m_importer.data(), &DBusMenuImporter::menuUpdated, this, [ = ](QMenu * menu) {
-        m_menu = m_importer->menu();
+        m_menu = importer->menu();
 
         if (m_menu.isNull() || menu != m_menu) {
             return;
@@ -543,7 +550,7 @@ void AppMenuModel::updateApplicationMenu(const QString &serviceName, const QStri
             connect(a, &QAction::destroyed, this, &AppMenuModel::modelNeedsUpdate);
 
             if (a->menu()) {
-                m_importer->updateMenu(a->menu());
+                importer->updateMenu(a->menu());
             }
         }
 
@@ -551,7 +558,12 @@ void AppMenuModel::updateApplicationMenu(const QString &serviceName, const QStri
         emit modelNeedsUpdate();
     });
 
-    connect(m_importer.data(), &DBusMenuImporter::actionActivationRequested, this, [this](QAction * action) {
+    connect(importer.data(), &DBusMenuImporter::actionActivationRequested, this,
+            [this, importer](QAction *action) {
+        if (!importer || m_importer != importer) {
+            return;
+        }
+
         // TODO submenus
         if (!m_menuAvailable || !m_menu) {
             return;
@@ -566,6 +578,20 @@ void AppMenuModel::updateApplicationMenu(const QString &serviceName, const QStri
     });
 }
 
+void AppMenuModel::releaseImporter()
+{
+    if (!m_importer) {
+        return;
+    }
+
+    KDBusMenuImporter *importer = m_importer.data();
+    m_importer.clear();
+    // Cut pending DBus callbacks before the importer goes away; otherwise a
+    // queued menuUpdated() can run against an already cleared importer.
+    importer->disconnect(this);
+    importer->deleteLater();
+}
+
 void AppMenuModel::clearApplicationMenu() {
     if (m_serviceName.isEmpty() && m_menuObjectPath.isEmpty()
         && !m_importer && !m_menuAvailable) {
@@ -576,10 +602,7 @@ void AppMenuModel::clearApplicationMenu() {
     m_serviceName.clear();
     m_menuObjectPath.clear();
     m_menu.clear();
-    if (m_importer) {
-        m_importer->deleteLater();
-        m_importer.clear();
-    }
+    releaseImporter();
     setMenuAvailable(false);
     emit modelNeedsUpdate();
 }

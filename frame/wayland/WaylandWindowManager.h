@@ -57,6 +57,7 @@ private:
 
     void createWindow(uint32_t id, const char *uuid);
     void removeWindow(Window *window);
+    void clearWindows();
     void notifyIfActive(Window *window);
     void flush();
 
