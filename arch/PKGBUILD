@@ -1,21 +1,22 @@
 # Maintainer: CharOfString <root@charofstring.cc>
-pkgname=gxde-top-panel-git
+pkgname=gxde-top-panel
 pkgver=2.0.4
 pkgrel=1
 pkgdesc='GXDE top panel'
 arch=('x86_64' 'aarch64')
 url="https://github.com/GXDE-OS/gxde-top-panel"
 license=('GPL-3.0-or-later')
-depends=('gxde-bernese-git' 'gxde-top-panel-plugins-git' 'gxde-globalmenu-service-git' 'dtk6widget-git' 'dtk6gui-git'
-         'dtk6core-git' 'dframework-dbus-qt6-git' 'gsettings-qt6' 'kwindowsystem' 'layer-shell-qt'
+depends=('gxde-bernese' 'gxde-top-panel-plugins' 'gxde-globalmenu-service' 'gxde-dtk6widget' 'gxde-dtk6gui'
+         'gxde-dtk6core' 'dframework-dbus-qt6' 'gsettings-qt6' 'kwindowsystem' 'layer-shell-qt'
          'qt6-base' 'qt6-svg' 'wayland' 'libx11' 'libxcb' 'xcb-util-wm' 'xdotool' 'libxkbcommon' 'dconf'
          'libgcc' 'libstdc++' 'glibc')
 makedepends=('git' 'cmake' 'ninja' 'qt6-tools')
 # Debian 把开发文件拆到 -dev 包，这里没有文件冲突，按 Arch 惯例合并
 # Debian splits the development files into a -dev package; nothing collides
 # here, so they stay in the main package as usual on Arch.
-provides=('gxde-top-panel')
-conflicts=('gxde-top-panel')
+provides=("gxde-top-panel-git=$pkgver")
+conflicts=('gxde-top-panel-git')
+replaces=('gxde-top-panel-git')
 source=()
 sha512sums=()
 
